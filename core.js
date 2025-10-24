@@ -1,4 +1,4 @@
-// core.js (改良版)
+// core.js
 
 // スコア計算（非線形ウェイト）
 export function calculateScore(value) {

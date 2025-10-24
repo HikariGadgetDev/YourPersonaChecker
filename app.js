@@ -7,7 +7,47 @@ import {
     COGNITIVE_STACKS,
     mbtiDescriptions
 } from './core.js';
-import { questions } from './data.js';
+import { questions as originalQuestions } from './data.js';
+
+// Fisher-Yatesシャッフル
+function fisherYatesShuffle(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// 制約付きシャッフル（同じ機能が2回連続しないように）
+function shuffleQuestionsWithConstraints(questions) {
+    const maxAttempts = 1000; // 無限ループ防止
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const shuffled = fisherYatesShuffle(questions);
+        
+        // 連続チェック
+        let hasConsecutive = false;
+        for (let i = 1; i < shuffled.length; i++) {
+            if (shuffled[i].type === shuffled[i - 1].type) {
+                hasConsecutive = true;
+                break;
+            }
+        }
+        
+        // 連続がなければ採用
+        if (!hasConsecutive) {
+            return shuffled;
+        }
+    }
+    
+    // 1000回試してもダメなら諦めてFisher-Yatesの結果を返す
+    // （実際には数回で成功するはず）
+    return fisherYatesShuffle(questions);
+}
+
+// シャッフルされた質問を使用
+const questions = shuffleQuestionsWithConstraints(originalQuestions);
 
 // ============================================
 // 初期状態定義
@@ -125,7 +165,10 @@ window.reset = function () {
 function showScorePopup(funcType, delta) {
     const el = document.createElement("div");
     el.className = "score-popup";
-    el.textContent = `${FUNCTIONS[funcType].name} +${delta.toFixed(1)}`;
+    
+    // プラスの時は +X.X、マイナスの時は -X.X（自動的に-がつく）
+    const sign = delta >= 0 ? '+' : '';
+    el.textContent = `${FUNCTIONS[funcType].name} ${sign}${delta.toFixed(1)}`;
     document.body.appendChild(el);
 
     // ランダム位置（画面中央付近）
@@ -152,9 +195,7 @@ function nextStep(callback) {
     }, 300);
 }
 
-// ============================================
 // レンダリング関数
-// ============================================
 
 /**
  * メイン描画処理
@@ -167,6 +208,7 @@ function render() {
         renderResult(container);
     } else {
         renderQuestion(container);
+        updateSidePanel(); // サイドパネルを更新
         
         // レンダリング後、選択状態を正しく反映（保険処理）
         setTimeout(() => {
@@ -180,6 +222,64 @@ function render() {
             });
         }, 0);
     }
+}
+
+/**
+ * サイドパネルの更新: 暫定MBTI出力関連
+ */
+function updateSidePanel() {
+    // 暫定的なMBTI判定
+    const provisionalResult = determineMBTIType(state.functionScores, COGNITIVE_STACKS);
+    const provisionalType = provisionalResult.type;
+    const provisionalDesc = mbtiDescriptions[provisionalType];
+    
+    // 進捗率
+    const progressPercent = Math.round((state.currentQuestion / (questions.length - 1)) * 100);
+    
+    // スコアリスト
+    const sortedScores = Object.entries(state.functionScores)
+        .map(([key, val]) => ({
+            key,
+            value: Math.max(0, Math.round((val + 10) * 5))
+        }))
+        .sort((a, b) => b.value - a.value);
+    
+    const sidePanel = document.querySelector('.summary');
+    if (!sidePanel) return;
+    
+    sidePanel.innerHTML = `
+        <div class="provisional-mbti">
+            <div class="provisional-label">暫定診断</div>
+            <div class="provisional-type">${provisionalType}</div>
+            <div class="provisional-name">${provisionalDesc.name}</div>
+            <div class="provisional-progress">${progressPercent}% complete</div>
+        </div>
+        
+        <div class="character-preview">
+            <div class="character-placeholder">
+                <div class="character-label">キャラクター画像</div>
+                <div class="character-note">友達が描いてくれる予定</div>
+            </div>
+        </div>
+        
+        <div class="score-list" id="scoreList">
+            ${sortedScores.map(item => `
+                <div class="score-item">
+                    <div style="font-weight:700;min-width:48px">${item.key}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${item.value}</div>
+                </div>
+            `).join('')}
+        </div>
+        
+        <footer class="note">回答するたびに暫定診断が更新されます</footer>
+    `;
+}
+
+/**
+ * タイプに応じた仮アイコンを返す（削除済み）
+ */
+function getCharacterIcon(type) {
+    return '';
 }
 
 /**
@@ -240,56 +340,115 @@ function renderResult(container) {
     const desc = mbtiDescriptions[mbtiType];
     const secondDesc = mbtiDescriptions[top2[1]];
 
-    // 次点タイプの表示ブロック
-    const secondBlock = secondDesc
-        ? `<div class="secondary-type">
-               <h4>次点タイプ: ${top2[1]} (${secondDesc.name})</h4>
-               <p>${secondDesc.description}</p>
-           </div>`
-        : '';
+    // 確信度に応じたメッセージ
+    const confidenceMessage = confidence >= 30 
+        ? '診断結果に高い信頼性があります'
+        : '複数のタイプの特性を持っています。次点タイプも参考にしてください';
+
+    // 認知機能スコアを降順ソート
+    const sortedScores = Object.entries(state.functionScores)
+        .map(([key, val]) => ({
+            key,
+            value: Math.max(0, Math.round((val + 10) * 5)),
+            func: FUNCTIONS[key]
+        }))
+        .sort((a, b) => b.value - a.value);
 
     container.innerHTML = `
-        <div class="result">
-            <h2>あなたのタイプは <span class="mbti">${mbtiType}</span> (${desc.name})</h2>
-            <p>${desc.description}</p>
-
-            <div class="confidence">
-                <p><strong>確信度:</strong> ${confidence}%</p>
-                ${confidence < 20 
-                    ? '<p>⚠ 判定が接近しています。次点タイプも参考にしてください。</p>' 
-                    : ''}
+        <div class="result fade-in">
+            <div class="result-header">
+                <div class="result-icon">🎯</div>
+                <h2 class="result-title">Analysis Complete</h2>
+                <p class="result-subtitle">Your cognitive profile has been identified</p>
             </div>
 
-            ${secondBlock}
-            ${getFunctionStackHTML(mbtiType)}
-            
-            <button onclick="reset()">もう一度診断する</button>
+            <div class="result-main-card">
+                <div class="mbti-badge">${mbtiType}</div>
+                <h3 class="mbti-name">${desc.name}</h3>
+                <p class="mbti-desc">${desc.description}</p>
+                
+                <div class="confidence-meter">
+                    <div class="confidence-label">
+                        <span>Match Confidence</span>
+                        <span class="confidence-value">${confidence}%</span>
+                    </div>
+                    <div class="confidence-bar-bg">
+                        <div class="confidence-bar-fill" style="width: ${confidence}%"></div>
+                    </div>
+                    <p class="confidence-message">${confidenceMessage}</p>
+                </div>
+            </div>
+
+            ${confidence < 30 ? `
+                <div class="secondary-type-card">
+                    <h4>Alternative Type: ${top2[1]}</h4>
+                    <p class="secondary-name">${secondDesc.name}</p>
+                    <p class="secondary-desc">${secondDesc.description}</p>
+                </div>
+            ` : ''}
+
+            <div class="function-stack-card">
+                <h4 class="stack-title">Cognitive Function Stack</h4>
+                <div class="stack-grid">
+                    ${COGNITIVE_STACKS[mbtiType].map((f, index) => `
+                        <div class="stack-item">
+                            <div class="stack-rank">${['Primary', 'Auxiliary', 'Tertiary', 'Inferior'][index]}</div>
+                            <div class="stack-func-name">${FUNCTIONS[f].fullName}</div>
+                            <div class="stack-func-code">${FUNCTIONS[f].name}</div>
+                            <div class="stack-func-desc">${FUNCTIONS[f].description}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="scores-breakdown">
+                <h4 class="breakdown-title">Detailed Function Scores</h4>
+                <div class="scores-grid">
+                    ${sortedScores.map(item => `
+                        <div class="score-card">
+                            <div class="score-header">
+                                <span class="score-func-code">${item.key}</span>
+                                <span class="score-value">${item.value}</span>
+                            </div>
+                            <div class="score-func-name">${item.func.fullName}</div>
+                            <div class="score-bar-mini">
+                                <div class="score-bar-mini-fill" style="width: ${item.value}%"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button class="btn-restart" onclick="reset()">
+                    <span>Take Assessment Again</span>
+                    <span class="btn-icon">↻</span>
+                </button>
+            </div>
         </div>
     `;
+
+    // 登場アニメーション
+    setTimeout(() => {
+        document.querySelectorAll('.result > *').forEach((el, index) => {
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 50);
+            }, index * 100);
+        });
+    }, 100);
 }
 
 /**
- * 認知機能スタックのHTML生成
- * @param {string} mbtiType - MBTIタイプ（例: 'INTJ'）
- * @returns {string} スタック表示用のHTML
+ * 認知機能スタックのHTML生成（削除：renderResult内に統合）
  */
 function getFunctionStackHTML(mbtiType) {
-    const stack = COGNITIVE_STACKS[mbtiType];
-    if (!stack) return '';
-    
-    return `
-        <div class="stack">
-            <h4>主要な認知機能スタック</h4>
-            <ul>
-                ${stack.map(f => `
-                    <li>
-                        <strong>${FUNCTIONS[f].fullName}</strong> (${FUNCTIONS[f].name})：
-                        ${FUNCTIONS[f].description}
-                    </li>
-                `).join('')}
-            </ul>
-        </div>
-    `;
+    return ''; // 使用しない
 }
 
 // ============================================

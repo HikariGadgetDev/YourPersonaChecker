@@ -125,9 +125,8 @@ const questionTexts = {
     ]
 };
 
-// ------------------------------------
 // 質問を一括生成
-// ------------------------------------
+
 export const questions = [
     ...makeQuestions("Ni", questionTexts.Ni, 1),
     ...makeQuestions("Ne", questionTexts.Ne, 6),
@@ -139,9 +138,8 @@ export const questions = [
     ...makeQuestions("Fe", questionTexts.Fe, 36)
 ];
 
-// ------------------------------------
 // MBTIタイプ説明
-// ------------------------------------
+
 export const mbtiDescriptions = {
     INTJ: { name: "建築家", description: "戦略的思考と革新的な洞察力を持つ完璧主義者。長期的ビジョンを実現するために論理的に計画を立てます。" },
     INTP: { name: "論理学者", description: "知的好奇心に満ちた思考家。複雑な問題を分析し、独創的な解決策を見出すことを楽しみます。" },
