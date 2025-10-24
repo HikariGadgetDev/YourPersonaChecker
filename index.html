@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MBTI 診断アプリ</title>
+  <meta name="description" content="シンプルな MBTI 診断（Vanilla JS / ES Modules）" />
+  
+  <!-- Google Fonts - JetBrains Mono for numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa4b2;
+      --accent:#60a5fa;
+      --glass: rgba(255,255,255,0.03);
+      --success: #34d399;
+      --glow: rgba(96, 165, 250, 0.4);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background: linear-gradient(180deg,var(--bg),#061022 120%);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:900px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      box-shadow:0 8px 30px rgba(2,6,23,0.7);
+      overflow:hidden;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:0;
+    }
+
+    .main{
+      padding:28px 30px;
+      min-height:420px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent 40%);
+    }
+
+    .side{
+      padding:20px;
+      border-left:1px solid rgba(255,255,255,0.03);
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+    }
+
+    header.app-head{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:24px;
+    }
+    .logo{
+      width:48px;height:48px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#7c3aed);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;color:#021426;
+      box-shadow:0 4px 18px rgba(96,165,250,0.12), inset 0 -4px 12px rgba(255,255,255,0.02);
+    }
+    h1{
+      font-size:24px;
+      margin:0;
+      font-weight:800;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:13px;font-style:italic;}
+
+    .progress{
+      height:6px;
+      background:rgba(255,255,255,0.03);
+      border-radius:999px;
+      overflow:hidden;
+      margin:0 0 24px 0;
+      box-shadow:inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .progress > i{
+      display:block;
+      height:100%;
+      background:linear-gradient(90deg,var(--accent),#7c3aed);
+      width:0%;
+      transition:width .5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:0 0 10px var(--glow);
+    }
+
+    .question h3{
+      margin:0 0 12px 0;
+      font-size:14px;
+      color:var(--muted);
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:1px;
+    }
+    .question p{
+      margin:0 0 20px 0;
+      color:#e6eef6;
+      line-height:1.6;
+      font-size:16px;
+      font-weight:500;
+    }
+
+    .options{
+      display:grid;
+      grid-template-columns:repeat(5, 1fr);
+      gap:10px;
+      margin-bottom:20px;
+    }
+    .option{
+      appearance:none;
+      border:1px solid rgba(255,255,255,0.06);
+      background:transparent;
+      padding:14px 10px;
+      border-radius:10px;
+      text-align:center;
+      cursor:pointer;
+      color:inherit;
+      font-weight:600;
+      font-size:13px;
+      transition:transform .12s ease, background .12s ease, border-color .12s ease;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .option:hover:not(:disabled){
+      transform:translateY(-3px);
+      border-color:rgba(96,165,250,0.3);
+    }
+    .option:disabled{opacity:0.5;cursor:not-allowed;}
+    .option.selected{
+      background:linear-gradient(90deg,var(--accent),#7c3aed);
+      color:#021426;
+      border:none;
+      box-shadow:0 8px 30px rgba(96,165,250,0.3);
+      transform:translateY(-2px);
+    }
+
+    .nav-row{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px}
+    .back-btn, .reset-btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,0.06);
+      background:transparent;
+      padding:8px 12px;
+      border-radius:10px;
+      color:var(--muted);
+      cursor:pointer;
+    }
+    .reset-btn{font-size:13px}
+
+    /* 結果スタイル */
+    .result{padding:8px}
+    .result h2{margin:0 0 8px 0;font-size:18px}
+    .mbti{background:rgba(255,255,255,0.06);padding:4px 8px;border-radius:6px;margin-left:6px}
+    .confidence p{margin:6px 0;color:var(--muted)}
+    .stack{margin-top:12px}
+    .stack ul{margin:8px 0 0 18px;color:var(--muted)}
+
+    .side .summary{font-size:13px;color:var(--muted)}
+    .score-list{margin-top:12px}
+    .score-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px 0;
+      border-bottom:1px dashed rgba(255,255,255,0.02);
+    }
+
+    footer.note{margin-top:12px;font-size:12px;color:var(--muted)}
+
+    /* スコアポップアップ */
+    .score-popup {
+      position: fixed;
+      font-size: 1.4em;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      background: linear-gradient(135deg, #34d399, #10b981);
+      color: #021426;
+      padding: 8px 16px;
+      border-radius: 12px;
+      opacity: 1;
+      transition: opacity 1s ease, transform 1s ease;
+      z-index: 9999;
+      box-shadow: 0 8px 32px rgba(52, 211, 153, 0.4);
+    }
+    .score-popup.fade-out {
+      opacity: 0;
+      transform: translateY(-60px) scale(1.2);
+    }
+
+    /* 新しい認知機能カードデザイン */
+    .status {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .func-card {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .func-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(96, 165, 250, 0.3);
+    }
+
+    .func-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .func-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      transition: all 0.3s ease;
+      animation: valueUpdate 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes valueUpdate {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .func-glow {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      border-radius: 0 0 12px 12px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      box-shadow: 0 0 20px var(--glow);
+    }
+
+    .func-card:hover .func-glow {
+      opacity: 1 !important;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-container { text-align: center; }
+    .result-item { margin: 10px 0; font-size: 1.1rem; }
+    .result-score { margin-left: 10px; font-weight: bold; }
+    .restart-btn {
+      margin-top: 20px;
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #6a5acd;
+      color: white;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+    .restart-btn:hover {
+      background: #7b68ee;
+    }
+
+    /* レスポンシブ */
+    @media (max-width:880px){
+      .wrap{grid-template-columns:1fr;}
+      .side{order:-1}
+      .status {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (max-width:600px){
+      .options{
+        grid-template-columns:1fr;
+        gap:8px;
+      }
+      .option{
+        white-space:normal;
+      }
+      .status {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .func-card {
+        padding: 12px 8px;
+      }
+      .func-value {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="application">
+
+    <main class="main" id="app" aria-live="polite">
+      <header class="app-head">
+        <div class="logo">Ψ</div>
+        <div>
+          <h1>Cognitive Function Analysis</h1>
+          <p class="lead">Discover your cognitive preferences through intuitive assessment</p>
+        </div>
+      </header>
+
+      <div class="placeholder">
+        <p style="color:var(--muted)">読み込みが完了するとここに問題が表示されます。</p>
+      </div>
+    </main>
+
+    <aside class="side" aria-hidden="false">
+      <div class="summary">
+        <strong>暫定的なタイプ判定</strong>
+        <div class="progress" aria-hidden="true"><i></i></div>
+
+        <div class="score-list" id="scoreList" aria-hidden="true">
+        </div>
+
+        <footer class="note">mbtiはxxxxです(未実装)</footer>
+      </div>
+    </aside>
+
+  </div>
+
+  <script type="module" src="./app.js"></script>
+
+  <script>
+    window.__updateSidePanel = function(functionScores, currentQuestion, totalQuestions){
+      const prog = document.querySelector('.progress > i');
+      const pct = Math.round(((currentQuestion) / Math.max(1, totalQuestions - 1)) * 100);
+      if (prog) prog.style.width = pct + '%';
+
+      const list = document.getElementById('scoreList');
+      if (!list) return;
+      list.innerHTML = '';
+      Object.entries(functionScores).forEach(([k,v])=>{
+        const norm = Math.min(100, Math.round((Math.abs(v)/4) * 100));
+        const el = document.createElement('div'); 
+        el.className = 'score-item';
+        el.innerHTML = `<div style="font-weight:700;min-width:48px">${k}</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${norm}</div>`;
+        list.appendChild(el);
+      });
+    };
+  </script>
+</body>
+</html>
