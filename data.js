@@ -1,7 +1,6 @@
-// data.js
+// data.js: 各機能8問 w/ 逆転項目付き
 
 // 認知機能の定義
-
 export const FUNCTIONS = {
     Ni: { name: 'Ni', fullName: '内向的直観', description: '洞察と未来予測' },
     Ne: { name: 'Ne', fullName: '外向的直観', description: '可能性の探求' },
@@ -14,7 +13,6 @@ export const FUNCTIONS = {
 };
 
 // 認知機能スタック定義（16タイプ）
-
 export const COGNITIVE_STACKS = {
     INTJ: ['Ni', 'Te', 'Fi', 'Se'],
     INTP: ['Ti', 'Ne', 'Si', 'Fe'],
@@ -34,18 +32,17 @@ export const COGNITIVE_STACKS = {
     ESFP: ['Se', 'Fi', 'Te', 'Ni']
 };
 
-// 質問生成関数（リファクタ）
-
-// 各機能に属する質問をまとめて自動生成
-function makeQuestions(type, texts, baseId) {
+// 質問生成関数（逆転項目対応）
+function makeQuestions(type, texts, baseId, reverseIndices = []) {
     return texts.map((text, i) => ({
         id: baseId + i,
         text,
-        type
+        type,
+        reverse: reverseIndices.includes(i) // 逆転項目フラグ
     }));
 }
 
-// 各認知機能ごとの質問文セット
+// 各認知機能ごとの質問文セット（8問ずつ、最後の2問は逆転項目）
 const questionTexts = {
     Ni: [
         "物事の背後にある深い意味やパターンを見出すことが多い",
@@ -54,8 +51,8 @@ const questionTexts = {
         "直感的に「これだ」と確信することが多く、その直感は大抵当たる",
         "象徴的な意味や隠れたつながりに気づきやすい",
         "長期的な目標に向けて一貫した戦略を立てる",
-        "物事の本質を見抜く洞察力がある",
-        "未来の展望を直感的に理解する"
+        "目の前の細かい事実よりも、全体像や本質を重視する", // 逆転
+        "抽象的な概念よりも具体的な事実の方が信頼できる" // 逆転
     ],
     Ne: [
         "一つの物事から無数の可能性やアイデアが浮かんでくる",
@@ -64,8 +61,8 @@ const questionTexts = {
         "型にはまらない創造的なアイデアを次々と思いつく",
         "「もしも～だったら」と想像を膨らませるのが好き",
         "ブレインストーミングで多様なアイデアを出すのが楽しい",
-        "話題を次々と変えて会話を広げるのが得意",
-        "既存の枠を超えた革新的な解決策を考える"
+        "一つの方法に固執するより、常に新しいやり方を試したい", // 逆転
+        "確立された方法よりも、実験的なアプローチを好む" // 逆転
     ],
     Si: [
         "過去の経験を詳細に記憶していて、それを現在に活用する",
@@ -74,8 +71,8 @@ const questionTexts = {
         "ルーティンや慣れ親しんだ環境を好む",
         "五感を通じた具体的な体験を大切にする",
         "試行錯誤された方法を使う方が安全だと感じる",
-        "過去の成功体験を参考にして決断する",
-        "詳細な記録や記憶を大切に保管する"
+        "新しい方法よりも慣れたやり方の方が落ち着く", // 逆転
+        "変化や新しい環境に適応するのに時間がかかる" // 逆転
     ],
     Se: [
         "今この瞬間の体験に完全に没頭できる",
@@ -84,8 +81,8 @@ const questionTexts = {
         "周囲の環境の変化に素早く気づき、即座に対応できる",
         "理論より実践を重視し、行動で示したい",
         "危機的状況でも冷静に現実を把握して行動できる",
-        "美的センスや身体的なスキルに自信がある",
-        "リアルタイムで状況に適応し、即興で対応する"
+        "計画を立てるよりも、その場の状況に応じて即興で動く方が得意", // 逆転
+        "じっくり考えるよりも、まず行動に移す方が好き" // 逆転
     ],
     Ti: [
         "物事の論理的な仕組みを理解することに喜びを感じる",
@@ -94,7 +91,8 @@ const questionTexts = {
         "効率性や合理性を追求し、無駄を省きたい",
         "客観的な真実を見極めるために徹底的に分析する",
         "問題を論理的に分解して根本原因を探る",
-        "複雑な理論を理解し、独自の解釈を加える"
+        "感情的な判断よりも論理的な分析を優先する",
+        "論理が通っていない説明には納得できない" // 逆転
     ],
     Te: [
         "目標を設定し、計画的に達成することが得意",
@@ -103,7 +101,8 @@ const questionTexts = {
         "非効率なシステムや方法を改善したくなる",
         "リーダーシップを発揮して物事を前に進めたい",
         "プロジェクトを管理し、期限内に完了させることが得意",
-        "明確なルールや基準を設定してチームを導く"
+        "明確なルールや基準を設定してチームを導く",
+        "結果を出すことが何よりも重要だと考える" // 逆転
     ],
     Fi: [
         "自分の価値観や信念に深く根ざした決定をする",
@@ -112,7 +111,8 @@ const questionTexts = {
         "表面的な関係より、少数の深いつながりを求める",
         "道徳的に正しいと思うことのために立ち上がる",
         "自分の感情と深く向き合い、理解しようとする",
-        "自分の内なる声に従って生きている"
+        "自分の内なる声に従って生きている",
+        "周囲の意見よりも自分の価値観を優先する" // 逆転
     ],
     Fe: [
         "場の雰囲気を読んで、みんなが心地よくなるよう配慮する",
@@ -121,25 +121,36 @@ const questionTexts = {
         "人々を励まし、サポートすることに喜びを感じる",
         "社会的な期待や規範を意識して行動する",
         "他人の気持ちを表現するのを手助けする",
-        "人々の感情的なニーズに敏感に反応する"
+        "人々の感情的なニーズに敏感に反応する",
+        "誰かが不快に感じているとすぐに気づく" // 逆転
     ]
 };
 
-// 質問を一括生成
+// 逆転項目のインデックス（各機能の最後の2問）
+const reverseIndices = {
+    Ni: [6, 7],
+    Ne: [6, 7],
+    Si: [6, 7],
+    Se: [6, 7],
+    Ti: [7], // Tiは1問のみ逆転
+    Te: [7], // Teは1問のみ逆転
+    Fi: [7], // Fiは1問のみ逆転
+    Fe: [7]  // Feは1問のみ逆転
+};
 
+// 質問を一括生成
 export const questions = [
-    ...makeQuestions("Ni", questionTexts.Ni, 1),
-    ...makeQuestions("Ne", questionTexts.Ne, 6),
-    ...makeQuestions("Si", questionTexts.Si, 11),
-    ...makeQuestions("Se", questionTexts.Se, 16),
-    ...makeQuestions("Ti", questionTexts.Ti, 21),
-    ...makeQuestions("Te", questionTexts.Te, 26),
-    ...makeQuestions("Fi", questionTexts.Fi, 31),
-    ...makeQuestions("Fe", questionTexts.Fe, 36)
+    ...makeQuestions("Ni", questionTexts.Ni, 1, reverseIndices.Ni),
+    ...makeQuestions("Ne", questionTexts.Ne, 9, reverseIndices.Ne),
+    ...makeQuestions("Si", questionTexts.Si, 17, reverseIndices.Si),
+    ...makeQuestions("Se", questionTexts.Se, 25, reverseIndices.Se),
+    ...makeQuestions("Ti", questionTexts.Ti, 33, reverseIndices.Ti),
+    ...makeQuestions("Te", questionTexts.Te, 41, reverseIndices.Te),
+    ...makeQuestions("Fi", questionTexts.Fi, 49, reverseIndices.Fi),
+    ...makeQuestions("Fe", questionTexts.Fe, 57, reverseIndices.Fe)
 ];
 
 // MBTIタイプ説明
-
 export const mbtiDescriptions = {
     INTJ: { name: "建築家", description: "戦略的思考と革新的な洞察力を持つ完璧主義者。長期的ビジョンを実現するために論理的に計画を立てます。" },
     INTP: { name: "論理学者", description: "知的好奇心に満ちた思考家。複雑な問題を分析し、独創的な解決策を見出すことを楽しみます。" },
