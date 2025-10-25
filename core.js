@@ -1,18 +1,18 @@
-// core.js
+// core.js (修正版)
 
-// スコア計算（非線形ウェイト）
-export function calculateScore(value) {
-
+// スコア計算（非線形ウェイト + 逆転項目対応）
+export function calculateScore(value, isReverse = false) {
+    // 逆転項目の場合はスコアを反転（5→1, 4→2, 3→3, 2→4, 1→5）
+    const actualValue = isReverse ? (6 - value) : value;
+    
     // 中央値3を基準に非線形スコアを算出
     // 強い同意・強い不同意をより強調
-
-    const base = value - 3; // -2, -1, 0, +1, +2
+    const base = actualValue - 3; // -2, -1, 0, +1, +2
     const weight = Math.sign(base) * Math.pow(Math.abs(base), 1.2);
     return weight;
 }
 
 // MBTIタイプ判定（確信度付き）
-
 export function determineMBTIType(functionScores, COGNITIVE_STACKS) {
     const typeScores = {};
 
@@ -28,7 +28,6 @@ export function determineMBTIType(functionScores, COGNITIVE_STACKS) {
     }
 
     // スコアを降順にソート
-
     const sorted = Object.entries(typeScores).sort((a, b) => b[1] - a[1]);
 
     const best = sorted[0];
@@ -49,7 +48,6 @@ export function determineMBTIType(functionScores, COGNITIVE_STACKS) {
 }
 
 // 認知機能・タイプ定義
-
 export const FUNCTIONS = {
     Ni: { name: 'Ni', fullName: '内向的直観', description: '洞察と未来予測' },
     Ne: { name: 'Ne', fullName: '外向的直観', description: '可能性の探求' },
@@ -61,9 +59,7 @@ export const FUNCTIONS = {
     Fe: { name: 'Fe', fullName: '外向的感情', description: '調和と共感' }
 };
 
-
 // 16タイプの認知機能スタック
-
 export const COGNITIVE_STACKS = {
     INTJ: ['Ni', 'Te', 'Fi', 'Se'],
     INTP: ['Ti', 'Ne', 'Si', 'Fe'],
@@ -84,7 +80,6 @@ export const COGNITIVE_STACKS = {
 };
 
 // タイプ説明
-
 export const mbtiDescriptions = {
     INTJ: { name: "建築家", description: "戦略的思考と革新的な洞察力を持つ完璧主義者。" },
     INTP: { name: "論理学者", description: "知的好奇心に満ちた思考家。" },

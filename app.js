@@ -1,4 +1,4 @@
-// app.js（完全版リファクタ）
+// app.js (完全版 - 逆転項目対応 + 状態管理改善 + 暫定診断閾値対応 + XSS対策)
 
 import {
     calculateScore,
@@ -8,6 +8,26 @@ import {
     mbtiDescriptions
 } from './core.js';
 import { questions as originalQuestions } from './data.js';
+
+// ============================================
+// セキュリティ: HTMLサニタイズ関数
+// ============================================
+
+/**
+ * テキストをHTMLエスケープ（XSS対策）
+ * 注: 現在は静的データのみだが、将来的な拡張に備えて実装
+ * @param {string} text - エスケープするテキスト
+ * @returns {string} エスケープされたHTML
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================
+// 質問のシャッフル処理
+// ============================================
 
 // Fisher-Yatesシャッフル
 function fisherYatesShuffle(array) {
@@ -19,9 +39,9 @@ function fisherYatesShuffle(array) {
     return shuffled;
 }
 
-// 制約付きシャッフル（同じ機能が2回連続しないように）
+// 制約付きシャッフル(同じ機能が2回連続しないように)
 function shuffleQuestionsWithConstraints(questions) {
-    const maxAttempts = 1000; // 無限ループ防止
+    const maxAttempts = 1000;
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const shuffled = fisherYatesShuffle(questions);
@@ -41,8 +61,8 @@ function shuffleQuestionsWithConstraints(questions) {
         }
     }
     
-    // 1000回試してもダメなら諦めてFisher-Yatesの結果を返す
-    // （実際には数回で成功するはず）
+    // フォールバック: 1000回試してもダメなら通常のシャッフル結果を返す
+    console.warn('制約付きシャッフルが1000回で完了しませんでした。通常のシャッフル結果を使用します。');
     return fisherYatesShuffle(questions);
 }
 
@@ -50,10 +70,11 @@ function shuffleQuestionsWithConstraints(questions) {
 const questions = shuffleQuestionsWithConstraints(originalQuestions);
 
 // ============================================
-// 初期状態定義
+// 初期状態定義（ディープコピー対応）
 // ============================================
 
-const defaultState = {
+// ファクトリー関数で毎回新しいオブジェクトを生成
+const createDefaultState = () => ({
     currentQuestion: 0,
     answers: {},
     functionScores: {
@@ -61,9 +82,9 @@ const defaultState = {
         Ti: 0, Te: 0, Fi: 0, Fe: 0
     },
     showResult: false
-};
+});
 
-let state = { ...defaultState };
+let state = createDefaultState();
 
 // 処理中フラグ（連打防止用）
 let isProcessing = false;
@@ -80,12 +101,36 @@ const SCORE_LABELS = {
     5: "とてもそう思う"
 };
 
+// スコア正規化定数
+// 理論値: 各機能8問 × 最大±2.3 ≒ ±18.4
+// 実用的な範囲として -20 ~ +20 を想定し、0-100に正規化
+const SCORE_MIN = -20;
+const SCORE_MAX = 20;
+
+// 暫定診断を表示する最低回答数（1機能分 = 8問）
+const MIN_ANSWERS_FOR_PROVISIONAL = 8;
+
+// アニメーション遅延時間（ミリ秒）
+const ANIMATION_DELAY = {
+    BUTTON_FEEDBACK: 200,      // ボタン選択後のフィードバック時間
+    SCREEN_TRANSITION: 300,    // 画面遷移時の待機時間
+    POPUP_FADE_START: 50,      // スコアポップアップのフェード開始
+    POPUP_REMOVE: 1200,        // スコアポップアップの削除タイミング
+    RESULT_STAGGER: 100        // 結果画面の要素表示間隔
+};
+
+function normalizeScore(rawScore) {
+    return Math.max(0, Math.min(100, 
+        Math.round(((rawScore - SCORE_MIN) / (SCORE_MAX - SCORE_MIN)) * 100)
+    ));
+}
+
 // ============================================
 // イベントハンドラ（グローバル関数）
 // ============================================
 
 /**
- * 回答処理
+ * 回答処理（逆転項目対応版）
  * @param {number} value - 選択された回答値（1-5）
  * @param {Event} event - クリックイベント
  */
@@ -96,30 +141,40 @@ window.handleAnswer = function (value, event) {
 
     const question = questions[state.currentQuestion];
     const funcType = question.type;
+    const isReverse = question.reverse || false; // 逆転項目フラグ
     const oldAnswer = state.answers[question.id];
 
-    // 前回の回答スコアを差し引く
+    // 前回の回答スコアを差し引く（逆転項目考慮）
     if (oldAnswer !== undefined) {
-        state.functionScores[funcType] -= calculateScore(oldAnswer);
+        const oldAnswerData = state.answers[question.id];
+        const oldScore = calculateScore(
+            typeof oldAnswerData === 'object' ? oldAnswerData.value : oldAnswerData, 
+            isReverse
+        );
+        state.functionScores[funcType] -= oldScore;
     }
 
-    // 新しいスコアを加算
-    const delta = calculateScore(value);
-    state.answers[question.id] = value;
+    // 新しいスコアを加算（逆転項目考慮）
+    const delta = calculateScore(value, isReverse);
+    
+    // 回答を保存（値と逆転フラグを両方保存）
+    state.answers[question.id] = {
+        value: value,
+        isReverse: isReverse
+    };
+    
     state.functionScores[funcType] += delta;
 
     // ポップアップ演出
-    showScorePopup(funcType, delta);
+    showScorePopup(funcType, delta, isReverse);
 
-    // ボタンの選択状態を更新（演出用）
+    // ボタンの選択状態を更新
     if (event && event.currentTarget) {
-        // 他のボタンからselectedを削除
         const buttons = document.querySelectorAll('.option');
         buttons.forEach(btn => {
             btn.classList.remove('selected');
-            btn.disabled = true; // 処理中は全ボタン無効化
+            btn.disabled = true;
         });
-        // クリックされたボタンにselectedを追加
         event.currentTarget.classList.add('selected');
     }
 
@@ -127,11 +182,11 @@ window.handleAnswer = function (value, event) {
     if (state.currentQuestion < questions.length - 1) {
         setTimeout(() => {
             nextStep(() => state.currentQuestion++);
-        }, 200);
+        }, ANIMATION_DELAY.BUTTON_FEEDBACK);
     } else {
         setTimeout(() => {
             nextStep(() => state.showResult = true);
-        }, 200);
+        }, ANIMATION_DELAY.BUTTON_FEEDBACK);
     }
 };
 
@@ -146,11 +201,59 @@ window.goBack = function () {
 };
 
 /**
- * 診断をリセット
+ * 診断をリセット（ディープコピー版）
  */
 window.reset = function () {
-    state = { ...defaultState };
+    state = createDefaultState(); // 新しいオブジェクトを生成
     render();
+};
+
+/**
+ * キーボードナビゲーション処理
+ * @param {KeyboardEvent} event - キーボードイベント
+ * @param {number} currentValue - 現在のボタンの値
+ */
+window.handleKeyboardNavigation = function (event, currentValue) {
+    const options = Array.from(document.querySelectorAll('.option'));
+    const currentIndex = options.findIndex(btn => parseInt(btn.dataset.value) === currentValue);
+    
+    let nextIndex = currentIndex;
+    
+    switch(event.key) {
+        case 'ArrowUp':
+        case 'ArrowLeft':
+            event.preventDefault();
+            nextIndex = Math.max(0, currentIndex - 1);
+            break;
+        case 'ArrowDown':
+        case 'ArrowRight':
+            event.preventDefault();
+            nextIndex = Math.min(options.length - 1, currentIndex + 1);
+            break;
+        case 'Enter':
+        case ' ':
+            event.preventDefault();
+            handleAnswer(currentValue, event);
+            return;
+        case 'Home':
+            event.preventDefault();
+            nextIndex = 0;
+            break;
+        case 'End':
+            event.preventDefault();
+            nextIndex = options.length - 1;
+            break;
+        default:
+            return;
+    }
+    
+    if (nextIndex !== currentIndex && options[nextIndex]) {
+        options[nextIndex].focus();
+        // tabindexを更新（ラジオグループのフォーカス管理）
+        options.forEach((opt, idx) => {
+            opt.tabIndex = idx === nextIndex ? 0 : -1;
+        });
+    }
 };
 
 // ============================================
@@ -158,17 +261,19 @@ window.reset = function () {
 // ============================================
 
 /**
- * スコア加算時のポップアップ演出
- * @param {string} funcType - 認知機能タイプ（例: 'Ni', 'Te'）
+ * スコア加算時のポップアップ演出（逆転項目表示対応）
+ * @param {string} funcType - 認知機能タイプ
  * @param {number} delta - 加算されたスコア
+ * @param {boolean} isReverse - 逆転項目かどうか
  */
-function showScorePopup(funcType, delta) {
+function showScorePopup(funcType, delta, isReverse) {
     const el = document.createElement("div");
     el.className = "score-popup";
     
-    // プラスの時は +X.X、マイナスの時は -X.X（自動的に-がつく）
     const sign = delta >= 0 ? '+' : '';
-    el.textContent = `${FUNCTIONS[funcType].name} ${sign}${delta.toFixed(1)}`;
+    const reverseIndicator = isReverse ? ' (R)' : '';
+    el.textContent = `${FUNCTIONS[funcType].name} ${sign}${delta.toFixed(1)}${reverseIndicator}`;
+    
     document.body.appendChild(el);
 
     // ランダム位置（画面中央付近）
@@ -178,8 +283,8 @@ function showScorePopup(funcType, delta) {
     el.style.top = `${y}px`;
 
     // フェードアウトアニメーション
-    setTimeout(() => el.classList.add("fade-out"), 50);
-    setTimeout(() => el.remove(), 1200);
+    setTimeout(() => el.classList.add("fade-out"), ANIMATION_DELAY.POPUP_FADE_START);
+    setTimeout(() => el.remove(), ANIMATION_DELAY.POPUP_REMOVE);
 }
 
 /**
@@ -190,12 +295,13 @@ function nextStep(callback) {
     setTimeout(() => {
         callback();
         render();
-        // 処理完了後、フラグをリセット
         isProcessing = false;
-    }, 300);
+    }, ANIMATION_DELAY.SCREEN_TRANSITION);
 }
 
+// ============================================
 // レンダリング関数
+// ============================================
 
 /**
  * メイン描画処理
@@ -203,20 +309,21 @@ function nextStep(callback) {
 function render() {
     const container = document.getElementById('app');
     
-    // 結果画面 or 質問画面を表示
     if (state.showResult) {
         renderResult(container);
     } else {
         renderQuestion(container);
-        updateSidePanel(); // サイドパネルを更新
+        updateSidePanel();
         
-        // レンダリング後、選択状態を正しく反映（保険処理）
+        // 選択状態を正しく反映
         setTimeout(() => {
             const allOptions = document.querySelectorAll('.option');
             const currentQuestion = questions[state.currentQuestion];
+            const savedAnswer = state.answers[currentQuestion?.id];
             allOptions.forEach(btn => {
                 const btnValue = parseInt(btn.getAttribute('data-value'));
-                if (state.answers[currentQuestion?.id] !== btnValue) {
+                const actualValue = savedAnswer ? savedAnswer.value : undefined;
+                if (actualValue !== btnValue) {
                     btn.classList.remove('selected');
                 }
             });
@@ -225,33 +332,69 @@ function render() {
 }
 
 /**
- * サイドパネルの更新: 暫定MBTI出力関連
+ * サイドパネルの更新（暫定診断閾値対応）
  */
 function updateSidePanel() {
-    // 暫定的なMBTI判定
-    const provisionalResult = determineMBTIType(state.functionScores, COGNITIVE_STACKS);
-    const provisionalType = provisionalResult.type;
-    const provisionalDesc = mbtiDescriptions[provisionalType];
+    const answeredCount = Object.keys(state.answers).length;
+    const progressPercent = Math.round((state.currentQuestion / Math.max(1, questions.length - 1)) * 100);
     
-    // 進捗率
-    const progressPercent = Math.round((state.currentQuestion / (questions.length - 1)) * 100);
-    
-    // スコアリスト
+    // スコアリストは常に表示
     const sortedScores = Object.entries(state.functionScores)
         .map(([key, val]) => ({
             key,
-            value: Math.max(0, Math.round((val + 10) * 5))
+            value: normalizeScore(val)
         }))
         .sort((a, b) => b.value - a.value);
     
     const sidePanel = document.querySelector('.summary');
     if (!sidePanel) return;
     
+    // 最低8問（1機能分）回答するまで暫定診断は非表示
+    if (answeredCount < MIN_ANSWERS_FOR_PROVISIONAL) {
+        sidePanel.innerHTML = `
+            <div class="provisional-mbti">
+                <div class="provisional-label">暫定診断</div>
+                <div style="padding:32px 16px;text-align:center;">
+                    <div style="font-size:48px;margin-bottom:12px;opacity:0.3;">❓</div>
+                    <div style="font-size:14px;color:var(--muted);line-height:1.6;">
+                        より正確な診断のため<br>
+                        質問に回答してください
+                    </div>
+                </div>
+                <div class="provisional-progress">${progressPercent}% complete</div>
+            </div>
+            
+            <div class="character-preview">
+                <div class="character-placeholder">
+                    <div class="character-label">キャラクター画像</div>
+                    <div class="character-note">友達が描いてくれる予定</div>
+                </div>
+            </div>
+            
+            <div class="score-list" id="scoreList">
+                ${sortedScores.map(item => `
+                    <div class="score-item">
+                        <div style="font-weight:700;min-width:48px">${escapeHtml(item.key)}</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${item.value}</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <footer class="note">回答数: ${answeredCount} / ${questions.length}</footer>
+        `;
+        return;
+    }
+    
+    // 8問以上回答済み → 暫定診断を表示
+    const provisionalResult = determineMBTIType(state.functionScores, COGNITIVE_STACKS);
+    const provisionalType = provisionalResult.type;
+    const provisionalDesc = mbtiDescriptions[provisionalType];
+    
     sidePanel.innerHTML = `
         <div class="provisional-mbti">
             <div class="provisional-label">暫定診断</div>
-            <div class="provisional-type">${provisionalType}</div>
-            <div class="provisional-name">${provisionalDesc.name}</div>
+            <div class="provisional-type">${escapeHtml(provisionalType)}</div>
+            <div class="provisional-name">${escapeHtml(provisionalDesc.name)}</div>
             <div class="provisional-progress">${progressPercent}% complete</div>
         </div>
         
@@ -265,7 +408,7 @@ function updateSidePanel() {
         <div class="score-list" id="scoreList">
             ${sortedScores.map(item => `
                 <div class="score-item">
-                    <div style="font-weight:700;min-width:48px">${item.key}</div>
+                    <div style="font-weight:700;min-width:48px">${escapeHtml(item.key)}</div>
                     <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${item.value}</div>
                 </div>
             `).join('')}
@@ -276,61 +419,74 @@ function updateSidePanel() {
 }
 
 /**
- * タイプに応じた仮アイコンを返す（削除済み）
- */
-function getCharacterIcon(type) {
-    return '';
-}
-
-/**
  * 質問画面の描画
- * @param {HTMLElement} container - 描画先のコンテナ要素
  */
 function renderQuestion(container) {
     const q = questions[state.currentQuestion];
+    const savedAnswer = state.answers[q.id];
+    const currentValue = savedAnswer ? savedAnswer.value : undefined;
     
     container.innerHTML = `
-        <div class="question">
-            <h3>Question ${state.currentQuestion + 1} of ${questions.length}</h3>
-            <p>${q.text}</p>
+        <div class="question" role="form" aria-label="MBTI診断質問フォーム">
+            <h3 id="question-number">Question ${state.currentQuestion + 1} of ${questions.length}</h3>
+            <p id="question-text" role="heading" aria-level="2">${escapeHtml(q.text)}${q.reverse ? ' <span style="color:var(--accent);font-size:0.9em">(逆転項目)</span>' : ''}</p>
             
-            <div class="options">
-                ${[1, 2, 3, 4, 5].map(v => `
-                    <button class="option ${state.answers[q.id] === v ? 'selected' : ''}"
+            <div class="options" role="radiogroup" aria-labelledby="question-text" aria-describedby="question-number">
+                ${[1, 2, 3, 4, 5].map((v, index) => `
+                    <button class="option ${currentValue === v ? 'selected' : ''}"
+                            role="radio"
+                            aria-checked="${currentValue === v ? 'true' : 'false'}"
+                            aria-label="${escapeHtml(SCORE_LABELS[v])} (5段階評価の${v})"
                             data-value="${v}"
-                            onclick="handleAnswer(${v}, event)">
-                        ${SCORE_LABELS[v]}
+                            tabindex="${currentValue === v ? '0' : (currentValue === undefined && index === 0 ? '0' : '-1')}"
+                            onclick="handleAnswer(${v}, event)"
+                            onkeydown="handleKeyboardNavigation(event, ${v})">
+                        ${escapeHtml(SCORE_LABELS[v])}
                     </button>
                 `).join('')}
             </div>
 
-            <div class="progress">
-                <i style="width:${Math.round((state.currentQuestion / (questions.length - 1)) * 100)}%"></i>
+            <div class="progress" role="progressbar" aria-valuenow="${progressPercent()}" aria-valuemin="0" aria-valuemax="100" aria-label="診断の進捗状況">
+                <i style="width:${progressPercent()}%"></i>
             </div>
 
-            <div class="status">
+            <div class="status" role="region" aria-label="認知機能スコア">
                 ${Object.entries(state.functionScores).map(([key, val]) => {
-                    const displayValue = Math.max(0, Math.round((val + 10) * 5));
+                    const displayValue = normalizeScore(val);
                     return `
-                        <div class="func-card">
-                            <div class="func-label">${key}</div>
+                        <div class="func-card" role="status" aria-label="${escapeHtml(key)}機能: ${displayValue}ポイント">
+                            <div class="func-label">${escapeHtml(key)}</div>
                             <div class="func-value">${displayValue}</div>
-                            <div class="func-glow" style="opacity: ${displayValue / 100}"></div>
+                            <div class="func-glow" style="opacity: ${displayValue / 100}" aria-hidden="true"></div>
                         </div>
                     `;
                 }).join('')}
             </div>
 
             ${state.currentQuestion > 0 
-                ? `<button class="back-btn" onclick="goBack()">← Back</button>` 
+                ? `<button class="back-btn" onclick="goBack()" aria-label="前の質問に戻る">← Back</button>` 
                 : ''}
         </div>
     `;
+    
+    // キーボードナビゲーション: 最初の選択肢または選択済みの選択肢にフォーカス
+    setTimeout(() => {
+        const selectedOption = container.querySelector('.option[aria-checked="true"]');
+        const firstOption = container.querySelector('.option');
+        (selectedOption || firstOption)?.focus();
+    }, 0);
+}
+
+/**
+ * 進捗率計算
+ */
+function progressPercent() {
+    if (questions.length <= 1) return 100;
+    return Math.round((state.currentQuestion / (questions.length - 1)) * 100);
 }
 
 /**
  * 結果画面の描画
- * @param {HTMLElement} container - 描画先のコンテナ要素
  */
 function renderResult(container) {
     const result = determineMBTIType(state.functionScores, COGNITIVE_STACKS);
@@ -340,78 +496,76 @@ function renderResult(container) {
     const desc = mbtiDescriptions[mbtiType];
     const secondDesc = mbtiDescriptions[top2[1]];
 
-    // 確信度に応じたメッセージ
     const confidenceMessage = confidence >= 30 
         ? '診断結果に高い信頼性があります'
         : '複数のタイプの特性を持っています。次点タイプも参考にしてください';
 
-    // 認知機能スコアを降順ソート
     const sortedScores = Object.entries(state.functionScores)
         .map(([key, val]) => ({
             key,
-            value: Math.max(0, Math.round((val + 10) * 5)),
+            value: normalizeScore(val),
             func: FUNCTIONS[key]
         }))
         .sort((a, b) => b.value - a.value);
 
     container.innerHTML = `
-        <div class="result fade-in">
+        <div class="result fade-in" role="article" aria-labelledby="result-title">
             <div class="result-header">
-                <div class="result-icon">🎯</div>
-                <h2 class="result-title">Analysis Complete</h2>
+                <div class="result-icon" aria-hidden="true">🎯</div>
+                <h2 id="result-title" class="result-title">Analysis Complete</h2>
                 <p class="result-subtitle">Your cognitive profile has been identified</p>
             </div>
 
-            <div class="result-main-card">
-                <div class="mbti-badge">${mbtiType}</div>
-                <h3 class="mbti-name">${desc.name}</h3>
-                <p class="mbti-desc">${desc.description}</p>
+            <div class="result-main-card" role="region" aria-labelledby="mbti-type">
+                <div id="mbti-type" class="mbti-badge" role="heading" aria-level="1">${escapeHtml(mbtiType)}</div>
+                <h3 class="mbti-name">${escapeHtml(desc.name)}</h3>
+                <p class="mbti-desc">${escapeHtml(desc.description)}</p>
                 
-                <div class="confidence-meter">
+                <div class="confidence-meter" role="region" aria-label="診断結果の信頼度">
                     <div class="confidence-label">
                         <span>Match Confidence</span>
                         <span class="confidence-value">${confidence}%</span>
                     </div>
-                    <div class="confidence-bar-bg">
+                    <div class="confidence-bar-bg" role="progressbar" aria-valuenow="${confidence}" aria-valuemin="0" aria-valuemax="100">
                         <div class="confidence-bar-fill" style="width: ${confidence}%"></div>
                     </div>
-                    <p class="confidence-message">${confidenceMessage}</p>
+                    <p class="confidence-message">${escapeHtml(confidenceMessage)}</p>
                 </div>
             </div>
 
             ${confidence < 30 ? `
-                <div class="secondary-type-card">
-                    <h4>Alternative Type: ${top2[1]}</h4>
-                    <p class="secondary-name">${secondDesc.name}</p>
-                    <p class="secondary-desc">${secondDesc.description}</p>
+                <div class="secondary-type-card" role="complementary" aria-label="次点タイプ">
+                    <h4>Alternative Type: ${escapeHtml(top2[1])}</h4>
+                    <p class="secondary-name">${escapeHtml(secondDesc.name)}</p>
+                    <p class="secondary-desc">${escapeHtml(secondDesc.description)}</p>
                 </div>
             ` : ''}
 
-            <div class="function-stack-card">
-                <h4 class="stack-title">Cognitive Function Stack</h4>
+            <div class="function-stack-card" role="region" aria-labelledby="stack-title">
+                <h4 id="stack-title" class="stack-title">Cognitive Function Stack</h4>
                 <div class="stack-grid">
                     ${COGNITIVE_STACKS[mbtiType].map((f, index) => `
-                        <div class="stack-item">
-                            <div class="stack-rank">${['Primary', 'Auxiliary', 'Tertiary', 'Inferior'][index]}</div>
-                            <div class="stack-func-name">${FUNCTIONS[f].fullName}</div>
-                            <div class="stack-func-code">${FUNCTIONS[f].name}</div>
-                            <div class="stack-func-desc">${FUNCTIONS[f].description}</div>
+                        <div class="stack-item" role="article">
+                            <div class="stack-rank">${escapeHtml(['Primary', 'Auxiliary', 'Tertiary', 'Inferior'][index])}</div>
+                            <div class="stack-func-name">${escapeHtml(FUNCTIONS[f].fullName)}</div>
+                            <div class="stack-func-code">${escapeHtml(FUNCTIONS[f].name)}</div>
+                            <div class="stack-func-desc">${escapeHtml(FUNCTIONS[f].description)}</div>
                         </div>
                     `).join('')}
                 </div>
             </div>
 
-            <div class="scores-breakdown">
-                <h4 class="breakdown-title">Detailed Function Scores</h4>
+            <div class="scores-breakdown" role="region" aria-labelledby="breakdown-title">
+                <h4 id="breakdown-title" class="breakdown-title">Detailed Function Scores</h4>
                 <div class="scores-grid">
                     ${sortedScores.map(item => `
-                        <div class="score-card">
+                        <div class="score-card" role="article" aria-label="${escapeHtml(item.func.fullName)}: ${item.value}ポイント">
                             <div class="score-header">
-                                <span class="score-func-code">${item.key}</span>
+                                <span class="score-func-code">${escapeHtml(item.key)}</span>
                                 <span class="score-value">${item.value}</span>
                             </div>
-                            <div class="score-func-name">${item.func.fullName}</div>
-                            <div class="score-bar-mini">
+                            <div class="score-func-name">${escapeHtml(item.func.fullName)}</div>
+                            <div class="score-bar-mini" role="progressbar" aria-valuenow="${item.value}" aria-valuemin="0" aria-valuemax="100">
                                 <div class="score-bar-mini-fill" style="width: ${item.value}%"></div>
                             </div>
                         </div>
@@ -420,9 +574,9 @@ function renderResult(container) {
             </div>
 
             <div class="result-actions">
-                <button class="btn-restart" onclick="reset()">
+                <button class="btn-restart" onclick="reset()" aria-label="診断を最初からやり直す">
                     <span>Take Assessment Again</span>
-                    <span class="btn-icon">↻</span>
+                    <span class="btn-icon" aria-hidden="true">↻</span>
                 </button>
             </div>
         </div>
@@ -439,16 +593,9 @@ function renderResult(container) {
                     el.style.opacity = '1';
                     el.style.transform = 'translateY(0)';
                 }, 50);
-            }, index * 100);
+            }, index * ANIMATION_DELAY.RESULT_STAGGER);
         });
-    }, 100);
-}
-
-/**
- * 認知機能スタックのHTML生成（削除：renderResult内に統合）
- */
-function getFunctionStackHTML(mbtiType) {
-    return ''; // 使用しない
+    }, ANIMATION_DELAY.RESULT_STAGGER);
 }
 
 // ============================================
