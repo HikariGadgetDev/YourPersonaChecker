@@ -9,6 +9,8 @@ import {
 } from './core.js';
 import { questions as originalQuestions } from './data.js';
 
+
+
 // ============================================
 // セキュリティ: HTMLサニタイズ関数
 // ============================================
@@ -511,7 +513,6 @@ function renderResult(container) {
     container.innerHTML = `
         <div class="result fade-in" role="article" aria-labelledby="result-title">
             <div class="result-header">
-                <div class="result-icon" aria-hidden="true">🎯</div>
                 <h2 id="result-title" class="result-title">Analysis Complete</h2>
                 <p class="result-subtitle">Your cognitive profile has been identified</p>
             </div>
