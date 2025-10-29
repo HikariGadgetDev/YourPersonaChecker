@@ -358,7 +358,7 @@ function updateSidePanel() {
                 <div class="provisional-label">暫定診断</div>
                 <div style="padding:32px 16px;text-align:center;">
                     <div style="font-size:48px;margin-bottom:12px;opacity:0.3;">❓</div>
-                    <div style="font-size:14px;color:var(--muted);line-height:1.6;">
+                    <div style="font-size:14px;color:var(--text-muted);line-height:1.6;">
                         より正確な診断のため<br>
                         質問に回答してください
                     </div>
@@ -468,6 +468,10 @@ function renderQuestion(container) {
             ${state.currentQuestion > 0 
                 ? `<button class="back-btn" onclick="goBack()" aria-label="前の質問に戻る">← Back</button>` 
                 : ''}
+            
+            <footer class="app-footer">
+                © ${new Date().getFullYear()} Cognitive Function Analysis • For educational purposes
+            </footer>
         </div>
     `;
     
@@ -580,6 +584,10 @@ function renderResult(container) {
                     <span class="btn-icon" aria-hidden="true">↻</span>
                 </button>
             </div>
+            
+            <footer class="app-footer">
+                © ${new Date().getFullYear()} Cognitive Function Analysis • Based on Jungian theory
+            </footer>
         </div>
     `;
 

@@ -3,990 +3,440 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MBTI認知機能診断</title>
-  <meta name="description" content="Jung理論に基づく認知機能診断アプリケーション">
+  <title>Cognitive Function Analysis - Jung理論に基づく透明な性格診断</title>
+  <meta name="description" content="Carl Jung の認知機能理論を厳密に実装した、完全に透明で検証可能なMBTI診断ツール。計算過程を公開し、科学的限界を正直に示します。">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <style>
-    /* ========================================
-       カスタムプロパティ
-    ======================================== */
-    :root {
-      --bg: #0f1724;
-      --card: #1a2332;
-      --card-hover: #212b3d;
-      --border: rgba(255, 255, 255, 0.06);
-      --border-hover: rgba(96, 165, 250, 0.3);
-      --text: #e6eef6;
-      --text-muted: #9aa4b2;
-      --accent: #60a5fa;
-      --accent-secondary: #a78bfa;
-      --success: #34d399;
-      --glow: rgba(96, 165, 250, 0.4);
-      
-      /* スペーシング */
-      --space-xs: 8px;
-      --space-sm: 12px;
-      --space-md: 16px;
-      --space-lg: 24px;
-      --space-xl: 32px;
-      
-      /* タイポグラフィ */
-      --font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-      --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, monospace;
-      
-      /* ボーダー半径 */
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-    }
+  <link rel="stylesheet" href="landing.css">
 
-    /* ========================================
-       リセット & ベーススタイル
-    ======================================== */
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    body {
-      font-family: var(--font-family);
-      background: linear-gradient(180deg, var(--bg), #061022);
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      font-size: 16px;
-      line-height: 1.6;
-    }
-
-    /* ========================================
-       レイアウトコンテナ
-    ======================================== */
-    .wrap {
-      display: flex;
-      width: 100%;
-      height: 100vh;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .main {
-      flex: 1;
-      padding: var(--space-lg);
-      overflow-y: auto;
-      overflow-x: hidden;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent 40%);
-    }
-
-    .side {
-      width: 360px;
-      padding: var(--space-lg);
-      border-left: 1px solid var(--border);
-      background: rgba(11, 18, 32, 0.6);
-      backdrop-filter: blur(10px);
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    /* ========================================
-       ヘッダー
-    ======================================== */
-    .app-head {
-      display: flex;
-      align-items: center;
-      gap: var(--space-sm);
-      margin-bottom: var(--space-lg);
-    }
-
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: var(--radius-md);
-      background: linear-gradient(135deg, var(--accent), #7c3aed);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: 700;
-      color: #021426;
-      box-shadow: 0 4px 18px rgba(96, 165, 250, 0.12);
-      flex-shrink: 0;
-    }
-
-    .app-head h1 {
-      font-size: clamp(18px, 4vw, 24px);
-      margin: 0;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
-      line-height: 1.2;
-    }
-
-    .lead {
-      margin: 4px 0 0;
-      color: var(--text-muted);
-      font-size: clamp(11px, 2.5vw, 13px);
-      font-style: italic;
-      line-height: 1.3;
-    }
-
-    /* ========================================
-       プログレスバー
-    ======================================== */
-    .progress {
-      height: 6px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 999px;
-      overflow: hidden;
-      margin: 0 0 var(--space-lg) 0;
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-    }
-
-    .progress > i {
-      display: block;
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), #7c3aed);
-      width: 0%;
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 10px var(--glow);
-    }
-
-    /* ========================================
-       質問スタイル
-    ======================================== */
-    .question h3 {
-      margin: 0 0 var(--space-sm) 0;
-      font-size: clamp(12px, 2.5vw, 14px);
-      color: var(--text-muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .question p {
-      margin: 0 0 var(--space-lg) 0;
-      color: var(--text);
-      line-height: 1.6;
-      font-size: clamp(15px, 3vw, 16px);
-      font-weight: 500;
-    }
-
-    /* ========================================
-       選択肢ボタン
-    ======================================== */
-    .options {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-xs);
-      margin-bottom: var(--space-lg);
-    }
-
-    .option {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: transparent;
-      padding: var(--space-md) var(--space-lg);
-      border-radius: var(--radius-md);
-      text-align: left;
-      cursor: pointer;
-      color: inherit;
-      font-weight: 600;
-      font-size: clamp(13px, 3vw, 15px);
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-      width: 100%;
-      line-height: 1.4;
-    }
-
-    .option::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: linear-gradient(180deg, var(--accent), #7c3aed);
-      transform: scaleY(0);
-      transition: transform 0.2s ease;
-    }
-
-    .option:hover:not(:disabled) {
-      transform: translateX(4px);
-      border-color: var(--border-hover);
-      background: rgba(96, 165, 250, 0.05);
-    }
-
-    .option:hover:not(:disabled)::before {
-      transform: scaleY(1);
-    }
-
-    .option:active:not(:disabled) {
-      transform: translateX(2px) scale(0.98);
-    }
-
-    .option:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .option.selected {
-      background: linear-gradient(90deg, var(--accent), #7c3aed);
-      color: #021426;
-      border: none;
-      box-shadow: 0 8px 30px rgba(96, 165, 250, 0.3);
-      transform: translateX(4px);
-    }
-
-    .option.selected::before {
-      transform: scaleY(1);
-    }
-
-    /* ========================================
-       認知機能スコアカード
-    ======================================== */
-    .status {
-      margin-top: var(--space-lg);
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-      gap: var(--space-sm);
-    }
-
-    .func-card {
-      position: relative;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: var(--space-md) var(--space-xs);
-      text-align: center;
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .func-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-hover);
-    }
-
-    .func-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      margin-bottom: var(--space-xs);
-    }
-
-    .func-value {
-      font-family: var(--font-mono);
-      font-size: clamp(24px, 5vw, 32px);
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      line-height: 1;
-      animation: valueUpdate 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @keyframes valueUpdate {
-      0% { transform: scale(0.8); opacity: 0.5; }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    .func-glow {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
-      border-radius: 0 0 var(--radius-md) var(--radius-md);
-      opacity: 0;
-      transition: opacity 0.4s ease;
-      box-shadow: 0 0 20px var(--glow);
-    }
-
-    .func-card:hover .func-glow {
-      opacity: 1 !important;
-    }
-
-    /* ========================================
-       ナビゲーションボタン
-    ======================================== */
-    .back-btn {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: transparent;
-      padding: var(--space-xs) var(--space-md);
-      border-radius: var(--radius-md);
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s ease;
-      margin-top: var(--space-md);
-    }
-
-    .back-btn:hover {
-      border-color: var(--border-hover);
-      color: var(--text);
-      transform: translateX(-2px);
-    }
-
-    /* ========================================
-       サイドパネル
-    ======================================== */
-    .summary {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .provisional-mbti {
-      background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(167, 139, 250, 0.08));
-      border: 1px solid rgba(96, 165, 250, 0.2);
-      border-radius: var(--radius-md);
-      padding: var(--space-md);
-      margin-bottom: var(--space-lg);
-      text-align: center;
-    }
-
-    .provisional-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: var(--space-xs);
-      font-weight: 600;
-    }
-
-    .provisional-type {
-      font-family: var(--font-mono);
-      font-size: 36px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      line-height: 1;
-      margin-bottom: var(--space-xs);
-      animation: typeFlicker 0.5s ease;
-    }
-
-    @keyframes typeFlicker {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    .provisional-name {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: var(--space-sm);
-      color: var(--text);
-    }
-
-    .provisional-progress {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-    .character-preview {
-      margin-bottom: var(--space-lg);
-    }
-
-    .character-placeholder {
-      background: rgba(255, 255, 255, 0.02);
-      border: 2px dashed rgba(255, 255, 255, 0.1);
-      border-radius: var(--radius-md);
-      padding: 48px var(--space-md);
-      text-align: center;
-      transition: all 0.3s ease;
-    }
-
-    .character-placeholder:hover {
-      border-color: var(--border-hover);
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .character-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    .character-note {
-      font-size: 11px;
-      color: var(--text-muted);
-      opacity: 0.6;
-      font-style: italic;
-    }
-
-    .score-list {
-      margin-top: var(--space-sm);
-    }
-
-    .score-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: var(--space-xs) 0;
-      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
-    }
-
-    .note {
-      margin-top: var(--space-sm);
-      font-size: 11px;
-      color: var(--text-muted);
-      opacity: 0.6;
-      line-height: 1.4;
-    }
-
-    /* ========================================
-       結果画面
-    ======================================== */
-    .result {
-      padding: var(--space-xs);
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .result-header {
-      text-align: center;
-      margin-bottom: var(--space-xl);
-    }
-
-    .result-title {
-      font-size: clamp(24px, 6vw, 32px);
-      font-weight: 800;
-      margin: 0 0 var(--space-xs) 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .result-subtitle {
-      color: var(--text-muted);
-      margin: 0;
-      font-size: clamp(12px, 2.5vw, 14px);
-    }
-
-    .result-main-card {
-      background: linear-gradient(135deg, rgba(96, 165, 250, 0.05), rgba(167, 139, 250, 0.05));
-      border: 1px solid rgba(96, 165, 250, 0.2);
-      border-radius: var(--radius-lg);
-      padding: var(--space-xl);
-      text-align: center;
-      margin-bottom: var(--space-lg);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .mbti-badge {
-      display: inline-block;
-      font-size: clamp(36px, 10vw, 48px);
-      font-weight: 800;
-      font-family: var(--font-mono);
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: var(--space-md);
-      position: relative;
-      z-index: 1;
-    }
-
-    .mbti-name {
-      font-size: clamp(20px, 5vw, 24px);
-      margin: 0 0 var(--space-sm) 0;
-      position: relative;
-      z-index: 1;
-    }
-
-    .mbti-desc {
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin: 0 0 var(--space-lg) 0;
-      position: relative;
-      z-index: 1;
-      font-size: clamp(14px, 3vw, 16px);
-    }
-
-    .confidence-meter {
-      position: relative;
-      z-index: 1;
-    }
-
-    .confidence-label {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: var(--space-xs);
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .confidence-value {
-      font-family: var(--font-mono);
-      font-size: 18px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .confidence-bar-bg {
-      height: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .confidence-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
-      border-radius: 999px;
-      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 20px var(--glow);
-    }
-
-    .confidence-message {
-      margin: var(--space-xs) 0 0 0;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .secondary-type-card {
-      background: rgba(167, 139, 250, 0.05);
-      border: 1px solid rgba(167, 139, 250, 0.15);
-      border-radius: var(--radius-md);
-      padding: var(--space-lg);
-      margin-bottom: var(--space-lg);
-    }
-
-    .secondary-type-card h4 {
-      margin: 0 0 var(--space-xs) 0;
-      font-size: clamp(14px, 3vw, 16px);
-      color: var(--accent);
-    }
-
-    .secondary-name {
-      font-weight: 600;
-      margin: 0 0 var(--space-xs) 0;
-    }
-
-    .secondary-desc {
-      color: var(--text-muted);
-      margin: 0;
-      font-size: clamp(13px, 2.5vw, 14px);
-    }
-
-    .function-stack-card {
-      margin-bottom: var(--space-lg);
-    }
-
-    .stack-title {
-      font-size: clamp(16px, 4vw, 18px);
-      margin: 0 0 var(--space-md) 0;
-      font-weight: 700;
-    }
-
-    .stack-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: var(--space-sm);
-    }
-
-    .stack-item {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: var(--space-md);
-      transition: all 0.3s ease;
-    }
-
-    .stack-item:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-hover);
-    }
-
-    .stack-rank {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--accent);
-      font-weight: 700;
-      margin-bottom: var(--space-xs);
-    }
-
-    .stack-func-name {
-      font-size: clamp(14px, 3vw, 16px);
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .stack-func-code {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: var(--space-xs);
-    }
-
-    .stack-func-desc {
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-
-    .scores-breakdown {
-      margin-bottom: var(--space-xl);
-    }
-
-    .breakdown-title {
-      font-size: clamp(16px, 4vw, 18px);
-      margin: 0 0 var(--space-md) 0;
-      font-weight: 700;
-    }
-
-    .scores-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-      gap: var(--space-sm);
-    }
-
-    .score-card {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: var(--space-md) var(--space-xs);
-      transition: all 0.3s ease;
-    }
-
-    .score-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--border-hover);
-    }
-
-    .score-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: var(--space-xs);
-    }
-
-    .score-func-code {
-      font-family: var(--font-mono);
-      font-size: 14px;
-      font-weight: 800;
-      color: var(--accent);
-    }
-
-    .score-value {
-      font-family: var(--font-mono);
-      font-size: clamp(18px, 4vw, 20px);
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .score-func-name {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: var(--space-xs);
-    }
-
-    .score-bar-mini {
-      height: 4px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .score-bar-mini-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent-secondary));
-      border-radius: 999px;
-      transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .result-actions {
-      text-align: center;
-    }
-
-    .btn-restart {
-      appearance: none;
-      border: none;
-      background: linear-gradient(135deg, var(--accent), #7c3aed);
-      color: #021426;
-      font-weight: 700;
-      font-size: clamp(14px, 3vw, 16px);
-      padding: var(--space-md) var(--space-xl);
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-sm);
-      transition: all 0.3s ease;
-      box-shadow: 0 8px 24px rgba(96, 165, 250, 0.3);
-    }
-
-    .btn-restart:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 32px rgba(96, 165, 250, 0.4);
-    }
-
-    .btn-restart:active {
-      transform: translateY(0);
-    }
-
-    .btn-icon {
-      font-size: 20px;
-    }
-
-    /* ========================================
-       スコアポップアップ
-    ======================================== */
-    .score-popup {
-      position: fixed;
-      font-size: clamp(16px, 3vw, 20px);
-      font-weight: 800;
-      font-family: var(--font-mono);
-      background: linear-gradient(135deg, var(--success), #10b981);
-      color: #021426;
-      padding: var(--space-xs) var(--space-md);
-      border-radius: var(--radius-md);
-      opacity: 1;
-      transition: opacity 1s ease, transform 1s ease;
-      z-index: 9999;
-      box-shadow: 0 8px 32px rgba(52, 211, 153, 0.4);
-      pointer-events: none;
-    }
-
-    .score-popup.fade-out {
-      opacity: 0;
-      transform: translateY(-60px) scale(1.2);
-    }
-
-    /* ========================================
-       アニメーション
-    ======================================== */
-    .fade-in {
-      animation: fadeIn 0.4s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ========================================
-       レスポンシブデザイン
-    ======================================== */
-    
-    /* タブレット (768px以下) */
-    @media (max-width: 768px) {
-      .wrap {
-        flex-direction: column;
-      }
-
-      .side {
-        width: 100%;
-        border-left: none;
-        border-top: 1px solid var(--border);
-        max-height: 40vh;
-      }
-
-      .main {
-        padding: var(--space-md);
-      }
-
-      .side {
-        padding: var(--space-md);
-      }
-    }
-
-    /* iPhone SE/小型スマホ (375px以下) */
-    @media (max-width: 375px) {
-      :root {
-        --space-xs: 6px;
-        --space-sm: 10px;
-        --space-md: 12px;
-        --space-lg: 16px;
-        --space-xl: 24px;
-      }
-
-      .main {
-        padding: var(--space-sm);
-      }
-
-      .side {
-        padding: var(--space-sm);
-      }
-
-      .logo {
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-      }
-
-      .status {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
-      }
-
-      .func-card {
-        padding: 10px 4px;
-      }
-
-      .func-label {
-        font-size: 10px;
-      }
-
-      .option {
-        padding: 12px 14px;
-        font-size: 13px;
-      }
-
-      .stack-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .scores-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .result-main-card {
-        padding: var(--space-lg);
-      }
-
-      .character-placeholder {
-        padding: 32px var(--space-sm);
-      }
-    }
-
-    /* 極小デバイス (320px以下) */
-    @media (max-width: 320px) {
-      .status {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
-      }
-
-      .func-card {
-        padding: 8px 2px;
-      }
-
-      .func-value {
-        font-size: 20px;
-      }
-
-      .option {
-        padding: 10px 12px;
-        font-size: 12px;
-      }
-    }
-
-    /* 横向き対応 */
-    @media (max-width: 768px) and (orientation: landscape) {
-      .side {
-        display: none;
-      }
-
-      .main {
-        height: 100vh;
-      }
-
-      .status {
-        grid-template-columns: repeat(8, 1fr);
-      }
-    }
-
-    /* スクロールバーのカスタマイズ */
-    .main::-webkit-scrollbar,
-    .side::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .main::-webkit-scrollbar-track,
-    .side::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .main::-webkit-scrollbar-thumb,
-    .side::-webkit-scrollbar-thumb {
-      background: rgba(96, 165, 250, 0.2);
-      border-radius: 999px;
-    }
-
-    .main::-webkit-scrollbar-thumb:hover,
-    .side::-webkit-scrollbar-thumb:hover {
-      background: rgba(96, 165, 250, 0.4);
-    }
-
-    /* タッチデバイス用の調整 */
-    @media (hover: none) and (pointer: coarse) {
-      .option {
-        padding: 14px 16px;
-        min-height: 44px; /* タップしやすいサイズ */
-      }
-
-      .back-btn {
-        min-height: 44px;
-        padding: 10px 16px;
-      }
-
-      .btn-restart {
-        min-height: 48px;
-        padding: 14px 24px;
-      }
-    }
-  </style>
 </head>
 <body>
-  <div class="wrap" role="application">
-    <main class="main" id="app" aria-live="polite">
-      <header class="app-head">
-        <div class="logo" aria-hidden="true">Ψ</div>
-        <div>
-          <h1>Cognitive Function Analysis</h1>
-          <p class="lead">Discover your cognitive preferences through intuitive assessment</p>
-        </div>
-      </header>
+  <!-- ヘッダー -->
+  <header class="landing-header">
+    <div class="header-content">
+      <a href="#" class="logo-link">
+        <div class="header-logo">Ψ</div>
+        <span class="header-title">Cognitive Function Analysis</span>
+      </a>
+    </div>
+  </header>
 
-      <div class="placeholder">
-        <p style="color:var(--text-muted);text-align:center;padding:var(--space-xl);">
-          読み込みが完了するとここに質問が表示されます。
+  <!-- ヒーローセクション -->
+  <section class="hero visible">
+    <div class="landing-container">
+      <span class="hero-badge">Open Source · Transparent · Verifiable</span>
+      
+      <h1 class="hero-title">
+        あなたの認知機能を<br>
+        科学的に、透明に、分析する
+      </h1>
+      
+      <p class="hero-subtitle">
+        Carl Jung の分析心理学に基づく認知機能理論を厳密に実装。<br>
+        計算過程を完全公開し、検証可能な診断を提供します。
+      </p>
+
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-value">64</div>
+          <div class="stat-label">Questions</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Functions</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">16</div>
+          <div class="stat-label">Types</div>
+        </div>
+      </div>
+
+      <a href="test.html" class="cta-primary">
+        <span>診断を始める</span>
+        <span class="cta-icon">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- 特徴セクション -->
+  <section class="features">
+    <div class="landing-container">
+      <h2 class="section-title">3つの約束</h2>
+      <p class="section-subtitle">
+        このツールが他のMBTI診断と決定的に異なる理由
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-icon">🔬</span>
+          <h3 class="feature-title">理論に忠実な実装</h3>
+          <p class="feature-description">
+            Jung の8認知機能モデルを心理測定学の手法で厳密に形式化。主機能・補助機能・第三機能・劣等機能の階層構造を重み付けに反映しています。
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔓</span>
+          <h3 class="feature-title">完全な透明性</h3>
+          <p class="feature-description">
+            すべての計算ロジックをオープンソースで公開。「なぜその診断結果になったか」を誰でも検証できます。ブラックボックスは一切ありません。
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">⚖️</span>
+          <h3 class="feature-title">誠実な限界の開示</h3>
+          <p class="feature-description">
+            この理論の科学的限界を正直に示します。MBTI は職業適性や人間関係の成功を予測しません。それでも、自己理解の補助的フレームワークとしての価値はあります。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 認知機能の紹介 -->
+  <section class="cognitive-section">
+    <div class="landing-container">
+      <h2 class="section-title">8つの認知機能</h2>
+      <p class="section-subtitle">
+        Jung が提唱した、人間の情報処理と判断を司る基本要素
+      </p>
+
+      <div class="cognitive-grid">
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Ni</span>
+            <span class="cognitive-name">内向的直観</span>
+          </div>
+          <p class="cognitive-desc">
+            洞察と未来予測。パターンを認識し、抽象的な本質を掴む機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Ne</span>
+            <span class="cognitive-name">外向的直観</span>
+          </div>
+          <p class="cognitive-desc">
+            可能性の探求。アイデアを発散させ、新しい関連性を発見する機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Si</span>
+            <span class="cognitive-name">内向的感覚</span>
+          </div>
+          <p class="cognitive-desc">
+            経験と伝統。過去の記憶を参照し、詳細を正確に再現する機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Se</span>
+            <span class="cognitive-name">外向的感覚</span>
+          </div>
+          <p class="cognitive-desc">
+            現在の体験。今この瞬間の五感情報を敏感に捉え、即座に反応する機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Ti</span>
+            <span class="cognitive-name">内向的思考</span>
+          </div>
+          <p class="cognitive-desc">
+            論理的分析。内的な論理体系を構築し、矛盾を検出する機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Te</span>
+            <span class="cognitive-name">外向的思考</span>
+          </div>
+          <p class="cognitive-desc">
+            効率的実行。客観的基準とシステムで、目標を達成する機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Fi</span>
+            <span class="cognitive-name">内向的感情</span>
+          </div>
+          <p class="cognitive-desc">
+            個人的価値。内的な価値観と真正性を重視し、道徳的判断を行う機能。
+          </p>
+        </div>
+
+        <div class="cognitive-card">
+          <div class="cognitive-header">
+            <span class="cognitive-code">Fe</span>
+            <span class="cognitive-name">外向的感情</span>
+          </div>
+          <p class="cognitive-desc">
+            調和と共感。場の雰囲気を察知し、集団の調和を維持する機能。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 透明性セクション -->
+  <section class="transparency-section">
+    <div class="landing-container">
+      <div class="transparency">
+        <h2 class="transparency-title">透明性の宣言</h2>
+        
+        <div class="transparency-content">
+          <div class="transparency-section">
+            <h3 class="transparency-heading">このツールが主張すること、主張しないこと</h3>
+            <p class="transparency-text">
+              私たちは、科学的誠実さを何よりも重視します。
+            </p>
+            <ul class="transparency-list">
+              <li><strong>主張すること:</strong> Jung 理論を厳密に実装すると、このような形になる</li>
+              <li><strong>主張すること:</strong> 計算過程は完全に公開され、誰でも検証できる</li>
+              <li><strong>主張すること:</strong> 「なぜその判定になったか」を説明できる</li>
+            </ul>
+            <ul class="transparency-list" style="margin-top: var(--space-md);">
+              <li><strong>主張しないこと:</strong> MBTI が科学的に妥当である</li>
+              <li><strong>主張しないこと:</strong> この診断結果が未来を予測できる</li>
+              <li><strong>主張しないこと:</strong> 他人の性格を判断する根拠になる</li>
+            </ul>
+          </div>
+
+          <div class="transparency-section">
+            <h3 class="transparency-heading">この理論の限界について</h3>
+            <p class="transparency-text">
+              誠実さのために、以下を告白せねばなりません。
+            </p>
+            <ul class="transparency-list">
+              <li>Jung の8認知機能モデルは、現代の査読システムにおいて十分な追試がなされていません</li>
+              <li>MBTI による16分類は、職業適性や学業成績を予測する妥当性を持ちません</li>
+              <li>Big Five（五因子モデル）は、数千の査読論文により予測妥当性が実証されており、学術的には遥かに優れています</li>
+            </ul>
+          </div>
+
+          <div class="transparency-section">
+            <h3 class="transparency-heading">それでも、なぜこれを作ったのか</h3>
+            <p class="transparency-text">
+              既存のMBTI診断ツールの多くは、ブラックボックスです。質問に答えると結果が出ますが、「どのように計算されたか」は隠されています。アルゴリズムは不透明で、検証不可能であり、批判することすらできません。
+            </p>
+            <p class="transparency-text">
+              私はこれを許容できませんでした。
+            </p>
+            <p class="transparency-text">
+              もし Jung の理論を実装するのであれば、それは<strong>透明で、再現可能で、批判可能</strong>でなければなりません。理論が正しいかどうかは別として、実装は誠実でなければなりません。
+            </p>
+          </div>
+
+          <div class="quote-box">
+            <p class="quote-text">
+              "Verum ipsum factum"<br>
+              （真理とは、作られたものである）
+            </p>
+            <p class="quote-author">— Giambattista Vico</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 診断の流れ -->
+  <section class="process-section">
+    <div class="landing-container">
+      <h2 class="section-title">診断の流れ</h2>
+      <p class="section-subtitle">
+        約5分で完了する、シンプルで正確なプロセス
+      </p>
+
+      <div class="process-steps">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h3 class="step-title">64問に回答</h3>
+          <p class="step-description">
+            各認知機能を8問ずつ測定。5段階評価で直感的に回答できます。
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h3 class="step-title">スコア計算</h3>
+          <p class="step-description">
+            非線形重み付けと逆転項目を用いた心理測定学的スコアリング。
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h3 class="step-title">タイプ判定</h3>
+          <p class="step-description">
+            Jung の機能スタック理論に基づき、16タイプから最適合を判定。
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">4</div>
+          <h3 class="step-title">詳細分析</h3>
+          <p class="step-description">
+            機能スタック、確信度、各機能のスコア内訳を視覚的に表示。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <div class="landing-container">
+      <h2 class="section-title">よくある質問</h2>
+      <p class="section-subtitle">
+        このツールについて、正直にお答えします
+      </p>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <h3 class="faq-question">Q. この診断は科学的に正しいですか？</h3>
+          <p class="faq-answer">
+            <span class="faq-highlight">正直に言えば、「科学的妥当性」は限定的です。</span>
+            MBTI は職業適性や人間関係の成功を予測する統計的証拠が不足しています。もし科学的に信頼できる性格診断を求めるなら、Big Five（五因子モデル）を使うべきです。<br><br>
+            ただし、このツールは「Jung 理論を忠実に実装した場合、どうなるか」を透明に示すことに価値があります。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Q. なぜ他のMBTI診断ではなく、これを使うべき？</h3>
+          <p class="faq-answer">
+            最大の違いは<span class="faq-highlight">「透明性」</span>です。多くのMBTI診断は計算方法を公開していません。このツールはすべてのロジックをオープンソースで公開し、「なぜその結果になったか」を説明できます。<br><br>
+            また、心理測定学の手法（非線形スコアリング、逆転項目、重み付け）を適切に実装しています。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Q. 診断結果は信頼できますか？</h3>
+          <p class="faq-answer">
+            結果には<span class="faq-highlight">「確信度」</span>が表示されます。これは第1位と第2位のタイプのスコア差を示します。確信度が低い場合、複数のタイプの特性を持っている可能性があります。<br><br>
+            重要なのは、結果を「絶対的な真実」ではなく、「自己理解の補助的フレームワーク」として使うことです。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Q. データは保存されますか？</h3>
+          <p class="faq-answer">
+            <span class="faq-highlight">いいえ、一切保存されません。</span>
+            すべての計算はブラウザ内で完結し、サーバーにデータは送信されません。完全にプライベートです。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Q. どのように使うのが正しいですか？</h3>
+          <p class="faq-answer">
+            このツールは以下の用途に適しています：<br>
+            ✓ 自己理解の補助的フレームワークとして<br>
+            ✓ 他者との対話の「共通言語」として<br>
+            ✓ Jung 理論の学習教材として<br><br>
+            以下の用途には<span class="faq-highlight">適していません：</span><br>
+            ✗ 採用選考や重要な意思決定の根拠として<br>
+            ✗ 他人の性格を一方的に判断する材料として<br>
+            ✗ 恋愛や人間関係の「相性診断」として
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h3 class="faq-question">Q. コードを見ることはできますか？</h3>
+          <p class="faq-answer">
+            <span class="faq-highlight">もちろんです。</span>
+            すべてのソースコードは完全に公開されています。ブラウザの開発者ツールで確認できますし、将来的にはGitHubで公開予定です。<br><br>
+            改善案があれば、ぜひフィードバックをお寄せください。このツールは「完璧」ではなく、「改善可能」であることを目指しています。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 最終CTA -->
+  <section class="final-cta-section">
+    <div class="landing-container">
+      <div class="final-cta">
+        <h2 class="final-cta-title">準備はできましたか？</h2>
+        <p class="final-cta-text">
+          約5分で、あなたの認知機能プロファイルを分析します。<br>
+          すべての計算過程は透明で、検証可能です。
         </p>
+        <a href="index.html" class="cta-primary">
+          <span>今すぐ診断を始める</span>
+          <span class="cta-icon">→</span>
+        </a>
       </div>
-    </main>
+    </div>
+  </section>
 
-    <aside class="side" aria-label="診断の進捗状況">
-      <div class="summary">
-        <strong style="display:block;margin-bottom:var(--space-sm);">進捗状況</strong>
-        <div class="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-          <i></i>
-        </div>
+  <!-- フッター -->
+  <footer class="landing-footer">
+    <div class="landing-container">
+      <p class="footer-quote">
+        "真理への道は、正しい理論を盲信することではなく、<br class="hide-mobile">
+        誤った理論を誠実に検証し、より良いものへと進むことにある。"
+      </p>
+      <p class="footer-text">
+        Cognitive Function Analysis · Open Source · Made with transparency
+      </p>
+    </div>
+  </footer>
 
-        <div class="score-list" id="scoreList"></div>
+  <script>
+    // Intersection Observer でスクロールアニメーション
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
 
-        <footer class="note">
-          データは端末に保存されません。<br>
-          結果は参考情報としてご利用ください。
-        </footer>
-      </div>
-    </aside>
-  </div>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
 
-  <script type="module" src="./app.js"></script>
+    // すべてのセクションを監視
+    document.querySelectorAll('section').forEach(section => {
+      observer.observe(section);
+    });
+
+    // スムーススクロール（古いブラウザ対応）
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#') {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }
+      });
+    });
+
+    // 診断開始ボタンのイベント
+    document.querySelectorAll('.cta-primary').forEach(button => {
+      button.addEventListener('click', function(e) {
+        // ここで app.js の初期化処理を呼び出す
+        // 現状は index.html へのリンクとして動作
+      });
+    });
+  </script>
 </body>
 </html>
