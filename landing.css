@@ -1,6 +1,6 @@
 /* ========================================
    ランディングページ専用 CSS (ライトモード)
-   診断画面(index.html)とは別ファイルで管理
+   診断画面(test.html)とは別ファイルで管理
 ======================================== */
 
 /* ========================================
@@ -73,6 +73,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -85,6 +87,8 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   min-height: 100vh;
+  width: 100%;
+  position: relative;
 }
 
 /* ========================================
@@ -94,6 +98,7 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-lg);
+  width: 100%;
 }
 
 section {
@@ -101,6 +106,8 @@ section {
   opacity: 0;
   transform: translateY(30px);
   transition: opacity 0.8s ease, transform 0.8s ease;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 section.visible {
@@ -119,6 +126,7 @@ section.visible {
   top: 0;
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
+  width: 100%;
 }
 
 .header-content {
@@ -155,6 +163,7 @@ section.visible {
   font-weight: 700;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  flex-shrink: 0;
 }
 
 .header-title {
@@ -165,6 +174,7 @@ section.visible {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.5px;
+  white-space: nowrap;
 }
 
 /* ========================================
@@ -229,6 +239,7 @@ section.visible {
 
 .stat-item {
   text-align: center;
+  min-width: 80px;
 }
 
 .stat-value {
@@ -279,6 +290,7 @@ section.visible {
 
 .cta-icon {
   font-size: 24px;
+  line-height: 1;
 }
 
 /* ========================================
@@ -308,8 +320,14 @@ section.visible {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-lg);
+}
+
+@media (max-width: 900px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .feature-card {
@@ -319,36 +337,14 @@ section.visible {
   padding: var(--space-xl);
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
   box-shadow: var(--card-shadow);
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--accent-gradient);
-  transform: scaleX(0);
-  transition: transform 0.3s ease;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
   border-color: var(--border-hover);
   box-shadow: var(--card-shadow-hover);
-}
-
-.feature-card:hover::before {
-  transform: scaleX(1);
-}
-
-.feature-icon {
-  font-size: 48px;
-  margin-bottom: var(--space-md);
-  display: block;
+  background: var(--card-hover-bg);
 }
 
 .feature-title {
@@ -373,9 +369,21 @@ section.visible {
 
 .cognitive-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-md);
   margin-top: var(--space-xl);
+}
+
+@media (max-width: 1024px) {
+  .cognitive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .cognitive-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cognitive-card {
@@ -408,6 +416,7 @@ section.visible {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  flex-shrink: 0;
 }
 
 .cognitive-name {
@@ -429,64 +438,65 @@ section.visible {
   background: var(--bg-secondary);
 }
 
-.transparency {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(139, 92, 246, 0.04));
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-xl);
-  padding: var(--space-2xl);
-  margin: var(--space-2xl) 0;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
-}
-
-.transparency-title {
-  font-size: clamp(24px, 5vw, 32px);
-  font-weight: 800;
-  margin-bottom: var(--space-md);
-  text-align: center;
-  color: var(--text-primary);
-}
-
-.transparency-content {
+.transparency-section .landing-container {
   max-width: 800px;
-  margin: 0 auto;
 }
 
-.transparency-section {
-  margin-bottom: var(--space-xl);
+/* 透明性リスト (dt/dd対応) */
+.transparency-list {
+  margin: var(--space-lg) 0;
+  text-align: left;
 }
 
-.transparency-section:last-child {
-  margin-bottom: 0;
-}
-
-.transparency-heading {
+.transparency-list dt {
   font-size: 18px;
   font-weight: 700;
   color: var(--accent-primary);
   margin-bottom: var(--space-sm);
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
+  margin-top: var(--space-xl);
 }
 
-.transparency-heading::before {
-  content: '§';
-  font-family: var(--font-mono);
-  font-size: 20px;
+.transparency-list dt:first-child {
+  margin-top: 0;
 }
 
-.transparency-text {
+.transparency-list dd {
   color: var(--text-secondary);
   line-height: 1.8;
-  margin-bottom: var(--space-sm);
+  margin-left: 0;
+  padding-left: var(--space-lg);
+  position: relative;
 }
 
-.transparency-list {
+.transparency-list dd::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent-gradient);
+  border-radius: 2px;
+}
+
+/* 透明性セクションの見出しとリスト */
+.transparency-section h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-md);
+  text-align: left;
+}
+
+.transparency-section ul {
   list-style: none;
   margin: var(--space-md) 0;
+  padding: 0;
+  text-align: left;
 }
 
-.transparency-list li {
+.transparency-section ul li {
   padding-left: var(--space-lg);
   position: relative;
   margin-bottom: var(--space-sm);
@@ -494,7 +504,7 @@ section.visible {
   line-height: 1.7;
 }
 
-.transparency-list li::before {
+.transparency-section ul li::before {
   content: '→';
   position: absolute;
   left: 0;
@@ -502,9 +512,17 @@ section.visible {
   font-weight: 700;
 }
 
-.transparency-list li strong {
-  color: var(--text-primary);
-  font-weight: 600;
+.transparency-section > p,
+.transparency-section .landing-container > p {
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin: var(--space-md) 0;
+  text-align: left;
+}
+
+.transparency-section > p:last-of-type,
+.transparency-section .landing-container > p:last-of-type {
+  margin-bottom: var(--space-lg);
 }
 
 .quote-box {
@@ -540,7 +558,7 @@ section.visible {
 
 .process-steps {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: var(--space-lg);
   margin-top: var(--space-xl);
   position: relative;
@@ -608,22 +626,33 @@ section.visible {
   box-shadow: var(--card-shadow-hover);
 }
 
-.faq-question {
+.faq-item h3 {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: var(--space-sm);
   color: var(--text-primary);
 }
 
-.faq-answer {
+.faq-item p {
   color: var(--text-secondary);
   line-height: 1.7;
   font-size: 15px;
+  margin: 0;
 }
 
-.faq-highlight {
+.faq-item strong,
+.faq-item em {
   color: var(--accent-primary);
   font-weight: 600;
+  font-style: normal;
+}
+
+/* 透明性セクション内の強調 */
+.transparency-section strong,
+.transparency-section em {
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-style: normal;
 }
 
 /* ========================================
@@ -631,15 +660,7 @@ section.visible {
 ======================================== */
 .final-cta-section {
   background: var(--bg-primary);
-}
-
-.final-cta {
   text-align: center;
-  padding: var(--space-3xl) var(--space-lg);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06), rgba(139, 92, 246, 0.06));
-  border: 1px solid var(--accent-border);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.08);
 }
 
 .final-cta-title {
@@ -674,6 +695,9 @@ section.visible {
   font-style: italic;
   margin-bottom: var(--space-sm);
   line-height: 1.6;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .footer-text {
@@ -685,21 +709,20 @@ section.visible {
    レスポンシブデザイン
 ======================================== */
 @media (max-width: 768px) {
+  :root {
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+    --space-4xl: 64px;
+  }
+
   .hero-stats {
     gap: var(--space-lg);
   }
 
-  .features-grid,
-  .cognitive-grid {
-    grid-template-columns: 1fr;
-  }
-
   .process-steps {
     grid-template-columns: 1fr;
-  }
-
-  .transparency {
-    padding: var(--space-lg);
   }
 
   section {
@@ -709,10 +732,27 @@ section.visible {
   .hide-mobile {
     display: none;
   }
+  
+  .hero::before {
+    width: 400px;
+    height: 400px;
+  }
 }
 
 @media (max-width: 480px) {
+  :root {
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 20px;
+    --space-2xl: 28px;
+    --space-3xl: 40px;
+  }
+
   .landing-container {
+    padding: 0 var(--space-md);
+  }
+
+  .header-content {
     padding: 0 var(--space-md);
   }
 
@@ -720,14 +760,170 @@ section.visible {
     padding: var(--space-2xl) 0 var(--space-xl);
   }
 
+  .hero::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  .hero-badge {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+
+  .hero-stats {
+    gap: var(--space-md);
+  }
+
+  .stat-value {
+    font-size: 32px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
   .cta-primary {
     width: 100%;
     justify-content: center;
+    padding: var(--space-md) var(--space-lg);
+    font-size: 16px;
   }
 
   .feature-card,
   .cognitive-card {
     padding: var(--space-lg);
+  }
+
+  .section-title {
+    font-size: 28px;
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+  }
+
+  .header-title {
+    font-size: 16px;
+  }
+
+  .header-logo {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+}
+
+/* iPhone SE (375px以下) 対応 */
+@media (max-width: 375px) {
+  :root {
+    --space-xs: 6px;
+    --space-sm: 10px;
+    --space-md: 12px;
+    --space-lg: 14px;
+    --space-xl: 18px;
+    --space-2xl: 24px;
+    --space-3xl: 32px;
+  }
+
+  .landing-container {
+    padding: 0 12px;
+  }
+
+  .header-content {
+    padding: 0 12px;
+  }
+
+  .hero-title {
+    font-size: 28px;
+    line-height: 1.3;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+  }
+
+  .hero-stats {
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .stat-item {
+    width: 100%;
+  }
+
+  .cta-primary {
+    font-size: 15px;
+    padding: 12px 16px;
+  }
+
+  .feature-title,
+  .step-title {
+    font-size: 17px;
+  }
+
+  .feature-description,
+  .step-description {
+    font-size: 14px;
+  }
+
+  .cognitive-code {
+    font-size: 20px;
+  }
+
+  .cognitive-name {
+    font-size: 13px;
+  }
+
+  .cognitive-desc {
+    font-size: 12px;
+  }
+
+  .step-number {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+
+  .faq-item h3 {
+    font-size: 16px;
+  }
+
+  .faq-item p {
+    font-size: 14px;
+  }
+
+  .quote-text {
+    font-size: 14px;
+  }
+
+  .quote-author {
+    font-size: 12px;
+  }
+
+  .final-cta-title {
+    font-size: 24px;
+  }
+
+  .final-cta-text {
+    font-size: 14px;
+  }
+  
+  .transparency-list dt {
+    font-size: 16px;
+  }
+  
+  .transparency-section h3 {
+    font-size: 18px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-logo {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 }
 
