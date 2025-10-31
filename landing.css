@@ -344,7 +344,6 @@ section.visible {
   transform: translateY(-4px);
   border-color: var(--border-hover);
   box-shadow: var(--card-shadow-hover);
-  background: var(--card-hover-bg);
 }
 
 .feature-title {
@@ -483,33 +482,50 @@ section.visible {
 .transparency-section h3 {
   font-size: 20px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--accent-primary);
   margin-top: var(--space-xl);
   margin-bottom: var(--space-md);
   text-align: left;
 }
 
+.transparency-section .content-block {
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-left: 0;
+  padding-left: var(--space-lg);
+  position: relative;
+  margin-bottom: var(--space-lg);
+}
+
+.transparency-section .content-block::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent-gradient);
+  border-radius: 2px;
+}
+
 .transparency-section ul {
   list-style: none;
-  margin: var(--space-md) 0;
+  margin: 0;
   padding: 0;
   text-align: left;
 }
 
 .transparency-section ul li {
-  padding-left: var(--space-lg);
-  position: relative;
   margin-bottom: var(--space-sm);
   color: var(--text-secondary);
   line-height: 1.7;
 }
 
 .transparency-section ul li::before {
-  content: '→';
-  position: absolute;
-  left: 0;
+  content: '• ';
   color: var(--accent-primary);
   font-weight: 700;
+  margin-right: var(--space-xs);
 }
 
 .transparency-section > p,
@@ -526,13 +542,36 @@ section.visible {
 }
 
 .quote-box {
-  background: rgba(59, 130, 246, 0.06);
-  border-left: 4px solid var(--accent-primary);
-  padding: var(--space-lg);
-  margin: var(--space-lg) 0;
+  background: var(--card-bg);
+  border: 1px solid var(--accent-border);
+  padding: var(--space-2xl);
+  margin: var(--space-2xl) 0;
   font-style: italic;
   color: var(--text-secondary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s ease;
+}
+
+.quote-box:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--border-hover);
+}
+
+.quote-box::before {
+  content: '"';
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  font-size: 80px;
+  font-weight: 800;
+  color: rgba(59, 130, 246, 0.08);
+  font-family: var(--font-mono);
+  line-height: 1;
+  pointer-events: none;
 }
 
 .quote-text {
@@ -678,6 +717,7 @@ section.visible {
 }
 
 .faq-item:hover {
+  transform: translateY(-4px);
   border-color: var(--border-hover);
   box-shadow: var(--card-shadow-hover);
 }
@@ -872,35 +912,44 @@ section.visible {
 /* iPhone SE (375px以下) 対応 */
 @media (max-width: 375px) {
   :root {
-    --space-xs: 6px;
-    --space-sm: 10px;
-    --space-md: 12px;
-    --space-lg: 14px;
-    --space-xl: 18px;
-    --space-2xl: 24px;
-    --space-3xl: 32px;
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 16px;
+    --space-lg: 20px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 40px;
+  }
+
+  body {
+    font-size: 15px;
+    line-height: 1.7;
   }
 
   .landing-container {
-    padding: 0 12px;
+    padding: 0 16px;
   }
 
   .header-content {
-    padding: 0 12px;
+    padding: 0 16px;
   }
 
   .hero-title {
-    font-size: 28px;
-    line-height: 1.3;
+    font-size: 26px;
+    line-height: 1.35;
+    margin-bottom: var(--space-xl);
   }
 
   .hero-subtitle {
     font-size: 14px;
+    line-height: 1.8;
+    margin-bottom: var(--space-2xl);
   }
 
   .hero-stats {
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
   }
 
   .stat-item {
@@ -909,17 +958,25 @@ section.visible {
 
   .cta-primary {
     font-size: 15px;
-    padding: 12px 16px;
+    padding: 14px 20px;
   }
 
   .feature-title,
   .step-title {
-    font-size: 17px;
+    font-size: 16px;
+    line-height: 1.4;
+    margin-bottom: var(--space-md);
   }
 
   .feature-description,
   .step-description {
     font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .feature-card,
+  .cognitive-card {
+    padding: var(--space-xl);
   }
 
   .cognitive-code {
@@ -931,7 +988,8 @@ section.visible {
   }
 
   .cognitive-desc {
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.6;
   }
 
   .step-number {
@@ -940,16 +998,30 @@ section.visible {
     font-size: 24px;
   }
 
+  .faq-item {
+    padding: var(--space-xl);
+    margin-bottom: var(--space-lg);
+  }
+
   .faq-item h3 {
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: var(--space-md);
   }
 
   .faq-item p {
     font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .quote-box {
+    padding: var(--space-xl);
+    margin: var(--space-xl) 0;
   }
 
   .quote-text {
     font-size: 14px;
+    line-height: 1.7;
   }
 
   .quote-author {
@@ -957,29 +1029,102 @@ section.visible {
   }
 
   .final-cta-title {
-    font-size: 24px;
+    font-size: 22px;
+    line-height: 1.4;
+    margin-bottom: var(--space-lg);
   }
 
   .final-cta-text {
     font-size: 14px;
+    line-height: 1.8;
+    margin-bottom: var(--space-xl);
   }
   
   .transparency-list dt {
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.4;
+    margin-bottom: var(--space-md);
+    margin-top: var(--space-2xl);
+  }
+
+  .transparency-list dd {
+    font-size: 14px;
+    line-height: 1.8;
+    padding-left: var(--space-lg);
   }
   
   .transparency-section h3 {
-    font-size: 18px;
+    font-size: 16px;
+    line-height: 1.4;
+    margin-top: var(--space-2xl);
+    margin-bottom: var(--space-lg);
+  }
+
+  .transparency-section ul li {
+    font-size: 14px;
+    line-height: 1.8;
+    margin-bottom: var(--space-md);
+    padding-left: var(--space-xl);
+  }
+
+  .transparency-section p {
+    font-size: 14px;
+    line-height: 1.8;
+    margin: var(--space-lg) 0;
+  }
+
+  .controversial-content p {
+    font-size: 14px;
+    line-height: 1.8;
+    margin: var(--space-xl) 0;
+  }
+
+  .controversial-content p:first-child {
+    font-size: 15px;
+  }
+
+  .controversial-final {
+    font-size: 14px !important;
+    line-height: 1.9 !important;
+    margin-top: var(--space-2xl) !important;
+    padding-top: var(--space-xl);
+  }
+
+  .footer-quote {
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: var(--space-lg);
+    padding: 0 var(--space-sm);
+  }
+
+  .footer-text {
+    font-size: 12px;
+  }
+
+  .section-title {
+    font-size: 24px;
+    line-height: 1.3;
+    margin-bottom: var(--space-md);
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: var(--space-2xl);
   }
 
   .header-title {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .header-logo {
     width: 32px;
     height: 32px;
     font-size: 16px;
+  }
+
+  section {
+    padding: var(--space-2xl) 0;
   }
 }
 
