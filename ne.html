@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title id="page-title">認知機能の詳細 — Persona Checker</title>
+  <meta name="description" id="page-description" content="認知機能の深層分析">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-gradient-start: #ffffff;
+      --bg-gradient-end: #f1f5f9;
+      --card-bg: #ffffff;
+      --card-hover-bg: #f8fafc;
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --card-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --border: rgba(0, 0, 0, 0.08);
+      --border-hover: rgba(59, 130, 246, 0.4);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent-primary: #3b82f6;
+      --accent-secondary: #8b5cf6;
+      --accent-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      --accent-bg-light: rgba(59, 130, 246, 0.05);
+      --accent-bg-medium: rgba(59, 130, 246, 0.1);
+      --accent-border: rgba(59, 130, 246, 0.2);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --space-xs: 8px;
+      --space-sm: 12px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --space-3xl: 64px;
+      --font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-family);
+      background: linear-gradient(180deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+    }
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-lg);
+    }
+    .back-link {
+      color: var(--accent-primary);
+      text-decoration: none;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      transition: transform 0.3s ease;
+    }
+    .back-link:hover { transform: translateX(-4px); }
+    .header-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .hero {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-3xl) var(--space-lg) var(--space-2xl);
+      text-align: center;
+    }
+    .function-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-lg);
+      background: var(--accent-bg-medium);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-lg);
+    }
+    .function-code {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .function-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .tagline {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xl);
+      font-style: italic;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+      justify-content: center;
+      margin-bottom: var(--space-2xl);
+    }
+    .tag {
+      padding: 6px 12px;
+      background: var(--accent-bg-light);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-primary);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 var(--space-lg) var(--space-3xl);
+    }
+
+    .section {
+      margin-bottom: var(--space-3xl);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .section-title {
+      font-size: clamp(24px, 5vw, 32px);
+      font-weight: 800;
+      margin-bottom: var(--space-lg);
+      color: var(--text-primary);
+      position: relative;
+      padding-left: var(--space-md);
+    }
+    .section-title::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--accent-gradient);
+      border-radius: 2px;
+    }
+
+    .lead {
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xl);
+      padding: var(--space-lg);
+      background: var(--accent-bg-light);
+      border-left: 3px solid var(--accent-primary);
+      border-radius: var(--radius-md);
+    }
+
+    .prose {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-lg);
+    }
+    .prose h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: var(--space-xl) 0 var(--space-md);
+    }
+    .prose h4 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      margin: var(--space-lg) 0 var(--space-sm);
+    }
+    .prose strong {
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+    .prose p {
+      margin-bottom: var(--space-md);
+    }
+    .prose ul, .prose ol {
+      margin-left: var(--space-lg);
+      margin-bottom: var(--space-md);
+    }
+    .prose li {
+      margin-bottom: var(--space-xs);
+    }
+
+    .characteristics {
+      display: grid;
+      gap: var(--space-lg);
+    }
+    .characteristic-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      transition: all 0.3s ease;
+      box-shadow: var(--card-shadow);
+    }
+    .characteristic-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-hover);
+      box-shadow: var(--card-shadow-hover);
+    }
+    .characteristic-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .characteristic-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .characteristic-desc {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: var(--space-sm);
+    }
+    .characteristic-example {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-secondary);
+      border-left: 2px solid var(--accent-primary);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .strengths-weaknesses {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-lg);
+    }
+    .sw-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--card-shadow);
+    }
+    .sw-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .sw-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .sw-list li {
+      padding-left: var(--space-lg);
+      position: relative;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .sw-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .strengths li::before { color: var(--success); }
+    .weaknesses li::before { color: var(--warning); }
+
+    .comparison-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-lg);
+      box-shadow: var(--card-shadow);
+    }
+    .comparison-header {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-md);
+      text-align: center;
+    }
+    .comparison-vs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-lg);
+      margin-bottom: var(--space-lg);
+    }
+    .comparison-function {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .comparison-divider {
+      font-size: 20px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: var(--space-lg) 0;
+    }
+    .comparison-table th {
+      background: var(--bg-secondary);
+      padding: var(--space-sm) var(--space-md);
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--border);
+    }
+    .comparison-table td {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .quote-box {
+      background: var(--card-bg);
+      border: 1px solid var(--accent-border);
+      padding: var(--space-xl);
+      margin: var(--space-xl) 0;
+      border-radius: var(--radius-lg);
+      position: relative;
+      box-shadow: var(--card-shadow);
+    }
+    .quote-box::before {
+      content: '"';
+      position: absolute;
+      top: 10px;
+      left: 20px;
+      font-size: 80px;
+      font-weight: 800;
+      color: rgba(59, 130, 246, 0.08);
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+    .quote-text {
+      font-size: 16px;
+      line-height: 1.7;
+      font-style: italic;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-xs);
+      position: relative;
+      z-index: 1;
+    }
+    .quote-author {
+      font-size: 14px;
+      text-align: right;
+      color: var(--accent-primary);
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .warning-box {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.02));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+      margin: var(--space-lg) 0;
+    }
+    .warning-title {
+      font-weight: 700;
+      color: var(--warning);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .warning-content {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02));
+      border: 1px solid var(--accent-border);
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+      margin: var(--space-lg) 0;
+    }
+    .info-title {
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .info-content {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .examples-grid {
+      display: grid;
+      gap: var(--space-md);
+    }
+    .example-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      box-shadow: var(--card-shadow);
+    }
+    .example-category {
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin-bottom: var(--space-xs);
+      font-size: 14px;
+    }
+    .example-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    .example-list li {
+      padding-left: var(--space-md);
+      position: relative;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .example-list li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent-primary);
+      font-weight: 700;
+    }
+
+    .famous-grid {
+      display: grid;
+      gap: var(--space-lg);
+    }
+    .famous-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+    .famous-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-hover);
+      box-shadow: var(--card-shadow-hover);
+    }
+    .famous-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: var(--space-sm);
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+    .famous-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .famous-type {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+    .famous-reason {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: var(--space-sm);
+      font-size: 15px;
+    }
+    .famous-quote {
+      padding: var(--space-sm) var(--space-md);
+      background: var(--bg-secondary);
+      border-left: 2px solid var(--accent-primary);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .stages-grid {
+      display: grid;
+      gap: var(--space-lg);
+    }
+    .stage-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--card-shadow);
+    }
+    .stage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: var(--space-md);
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+    .stage-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .stage-age {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-primary);
+    }
+
+    .types-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-md);
+    }
+    .type-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+    }
+    .type-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-hover);
+      box-shadow: var(--card-shadow-hover);
+    }
+    .type-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-sm);
+    }
+    .type-code {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .type-percentage {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .type-nickname {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+    .type-stack {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: var(--space-xs);
+    }
+    .type-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .footer {
+      padding: var(--space-2xl) var(--space-lg);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      background: var(--bg-secondary);
+    }
+    .footer-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: var(--space-sm);
+    }
+    .footer-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-style: italic;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .hero { padding: var(--space-2xl) var(--space-lg); }
+      .section-title { font-size: 24px; }
+      .comparison-vs { flex-direction: column; gap: var(--space-sm); }
+      .strengths-weaknesses { grid-template-columns: 1fr; }
+      .comparison-table { font-size: 14px; }
+      .comparison-table th, .comparison-table td { padding: var(--space-xs) var(--space-sm); }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <a href="index.html" class="back-link">
+        <span>←</span>
+        <span>戻る</span>
+      </a>
+      <div class="header-logo">Ψ</div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="function-badge">
+      <span class="function-code" id="hero-code">--</span>
+      <span class="function-name" id="hero-name">読み込み中...</span>
+    </div>
+    <h1 class="tagline" id="hero-tagline">認知機能の深層分析</h1>
+    <div class="tags" id="hero-tags"></div>
+  </section>
+
+  <main class="container" id="main-content">
+    <div class="info-box">
+      <div class="info-title">📖 読み込み中...</div>
+      <div class="info-content">データを読み込んでいます。少々お待ちください。</div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p class="footer-text">Persona Checker - 認知機能分析</p>
+    <p class="footer-note">
+      このページは Carl Jung の認知機能理論を基にした分析です。
+      科学的妥当性は限定的であり、自己理解の補助的フレームワークとしてご利用ください。
+    </p>
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const code = (params.get('code') || params.get('func') || 'ne').toLowerCase();
+
+    async function loadData() {
+      try {
+        const res = await fetch(`data/${code}.json`);
+        if (!res.ok) throw new Error(`${code}.json が見つかりません`);
+        const data = await res.json();
+
+        // ページタイトル設定
+        document.getElementById('page-title').textContent = 
+          `${data.name}（${data.code}）完全ガイド — Persona Checker`;
+
+        // ヒーロー
+        document.getElementById('hero-code').textContent = data.code || '';
+        document.getElementById('hero-name').textContent = data.name || data.nameEn || '';
+        document.getElementById('hero-tagline').textContent = data.tagline || '';
+        
+        const tagsContainer = document.getElementById('hero-tags');
+        if (data.tags && Array.isArray(data.tags)) {
+          tagsContainer.innerHTML = data.tags
+            .map(tag => `<span class="tag">${e(tag)}</span>`)
+            .join('');
+        }
+
+        // メインコンテンツ生成
+        let html = '';
+
+        // 概要
+        if (data.overview) {
+          html += `<section class="section">
+            <h2 class="section-title">この機能の本質</h2>
+            <div class="lead">${e(data.overview.short || data.overview.oneLiner || '')}</div>`;
+          
+          if (data.overview.long) {
+            html += '<div class="prose">';
+            for (const [key, value] of Object.entries(data.overview.long)) {
+              const title = {
+                essence: '本質',
+                mechanism: '仕組み',
+                comparison: '他機能との違い',
+                jungView: 'Jungの見解'
+              }[key] || key;
+              html += `<h3>${title}</h3><p>${nl2br(e(value))}</p>`;
+            }
+            html += '</div>';
+          }
+          html += '</section>';
+        }
+
+        // 神経科学的基盤
+        if (data.cognitiveScience) {
+          html += `<section class="section">
+            <h2 class="section-title">脳科学から見たメカニズム</h2>`;
+          
+          if (data.cognitiveScience.neuralBasis) {
+            html += `<div class="prose">${nl2br(e(data.cognitiveScience.neuralBasis))}</div>`;
+          }
+          
+          if (data.cognitiveScience.relatedProcesses && Array.isArray(data.cognitiveScience.relatedProcesses)) {
+            html += '<div class="prose"><h3>関連する認知プロセス</h3></div>';
+            data.cognitiveScience.relatedProcesses.forEach(proc => {
+              html += `<div class="info-box">
+                <div class="info-title">${e(proc.process)}</div>
+                <div class="info-content">
+                  <p>${e(proc.relation)}</p>
+                  ${proc.research ? `<p><em>参考：${e(proc.research)}</em></p>` : ''}
+                </div>
+              </div>`;
+            });
+          }
+          html += '</section>';
+        }
+
+        // 特性
+        if (data.characteristics && Array.isArray(data.characteristics)) {
+          html += `<section class="section">
+            <h2 class="section-title">5つの特性</h2>
+            <div class="characteristics">`;
+          
+          data.characteristics.forEach((char, i) => {
+            html += `<div class="characteristic-card">
+              <div class="characteristic-title">
+                <span class="characteristic-icon">${i + 1}</span>
+                <span>${e(char.title || '')}</span>
+              </div>
+              <p class="characteristic-desc">${e(char.description || '')}</p>
+              ${char.example ? `<div class="characteristic-example">例：${e(char.example)}</div>` : ''}
+            </div>`;
+          });
+          
+          html += '</div></section>';
+        }
+
+        // 強み・弱み
+        html += `<section class="section">
+          <h2 class="section-title">強みと弱み</h2>
+          <div class="strengths-weaknesses">
+            <div class="sw-card">
+              <div class="sw-title"><span>✓</span><span>強み</span></div>
+              <ul class="sw-list strengths">`;
+        
+        if (data.strengths && Array.isArray(data.strengths)) {
+          data.strengths.forEach(s => {
+            html += `<li>${e(s)}</li>`;
+          });
+        }
+        
+        html += `</ul></div><div class="sw-card">
+          <div class="sw-title"><span>⚠</span><span>弱み</span></div>
+              <ul class="sw-list weaknesses">`;
+        
+        if (data.weaknesses && Array.isArray(data.weaknesses)) {
+          data.weaknesses.forEach(w => {
+            html += `<li>${e(w)}</li>`;
+          });
+        }
+        
+        html += `</ul></div></div></section>`;
+
+        // 実生活での例
+        if (data.realLifeExamples) {
+          html += `<section class="section">
+            <h2 class="section-title">実生活での現れ方</h2>
+            <div class="examples-grid">`;
+          
+          for (const [category, examples] of Object.entries(data.realLifeExamples)) {
+            if (Array.isArray(examples)) {
+              const categoryName = {
+                work: '仕事',
+                relationships: '人間関係',
+                learning: '学習',
+                hobbies: '趣味・余暇'
+              }[category] || category;
+              
+              html += `<div class="example-card">
+                <div class="example-category">${categoryName}</div>
+                <ul class="example-list">`;
+              
+              examples.forEach(ex => {
+                html += `<li>${e(ex)}</li>`;
+              });
+              
+              html += `</ul></div>`;
+            }
+          }
+          
+          html += `</div></section>`;
+        }
+
+        // 比較
+        if (data.comparisons && data.comparisons.polarOpposite) {
+          const comp = data.comparisons.polarOpposite;
+          html += `<section class="section">
+            <h2 class="section-title">他の機能との比較</h2>
+            <div class="comparison-card">
+              <div class="comparison-header">${e(comp.title || '')}</div>
+              <div class="comparison-vs">
+                <span class="comparison-function">${data.code}</span>
+                <span class="comparison-divider">vs</span>
+                <span class="comparison-function">${comp.function}</span>
+              </div>`;
+          
+          if (comp.keyDifferences && Array.isArray(comp.keyDifferences)) {
+            html += `<table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>観点</th>
+                  <th>${data.code}</th>
+                  <th>${comp.function}</th>
+                </tr>
+              </thead>
+              <tbody>`;
+            
+            comp.keyDifferences.forEach(diff => {
+              html += `<tr>
+                <td><strong>${e(diff.aspect)}</strong></td>
+                <td>${e(diff[data.code] || '')}</td>
+                <td>${e(diff[comp.function] || '')}</td>
+              </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+          }
+
+          if (comp.integration) {
+            html += `<div class="info-box">
+              <div class="info-title">💡 統合のヒント</div>
+              <div class="info-content">${e(comp.integration)}</div>
+            </div>`;
+          }
+          
+          html += `</div></section>`;
+        }
+
+        // スタック別ダイナミクス
+        if (data.comparisons && data.comparisons.stackDynamics) {
+          const stack = data.comparisons.stackDynamics;
+          html += `<section class="section">
+            <h2 class="section-title">機能スタックにおける役割</h2>`;
+          
+          ['asDominant', 'asAuxiliary', 'asTertiary', 'asInferior'].forEach(position => {
+            if (stack[position]) {
+              const pos = stack[position];
+              const posName = {
+                asDominant: '主機能として',
+                asAuxiliary: '補助機能として',
+                asTertiary: '第三機能として',
+                asInferior: '劣等機能として'
+              }[position];
+              
+              html += `<div class="info-box">
+                <div class="info-title">${posName}</div>
+                <div class="info-content">`;
+              
+              if (pos.types && Array.isArray(pos.types)) {
+                html += `<p><strong>対象タイプ：</strong>${pos.types.join(', ')}</p>`;
+              }
+              if (pos.percentage) {
+                html += `<p><strong>人口比：</strong>${e(pos.percentage)}</p>`;
+              }
+              if (pos.role) {
+                html += `<p>${e(pos.role)}</p>`;
+              }
+              if (pos.strengths && Array.isArray(pos.strengths)) {
+                html += `<p><strong>強み：</strong></p><ul>`;
+                pos.strengths.forEach(s => html += `<li>${e(s)}</li>`);
+                html += `</ul>`;
+              }
+              if (pos.challenges && Array.isArray(pos.challenges)) {
+                html += `<p><strong>課題：</strong></p><ul>`;
+                pos.challenges.forEach(c => html += `<li>${e(c)}</li>`);
+                html += `</ul>`;
+              }
+              
+              html += `</div></div>`;
+            }
+          });
+          
+          html += `</section>`;
+        }
+
+        // 発達段階
+        if (data.developmentalStages) {
+          html += `<section class="section">
+            <h2 class="section-title">人生の発達段階</h2>
+            <div class="stages-grid">`;
+          
+          for (const [stage, info] of Object.entries(data.developmentalStages)) {
+            const stageName = {
+              childhood: '子ども時代',
+              adolescence: '青年期',
+              adulthood: '成人期',
+              maturity: '成熟期'
+            }[stage] || stage;
+            
+            html += `<div class="stage-card">
+              <div class="stage-header">
+                <div class="stage-title">${stageName}</div>
+                ${info.age ? `<div class="stage-age">${e(info.age)}</div>` : ''}
+              </div>`;
+            
+            if (info.characteristics && Array.isArray(info.characteristics)) {
+              html += `<div class="prose"><h4>特徴</h4><ul>`;
+              info.characteristics.forEach(c => html += `<li>${e(c)}</li>`);
+              html += `</ul></div>`;
+            }
+            
+            if (info.challenges && Array.isArray(info.challenges)) {
+              html += `<div class="prose"><h4>課題</h4><ul>`;
+              info.challenges.forEach(c => html += `<li>${e(c)}</li>`);
+              html += `</ul></div>`;
+            }
+            
+            if (info.support) {
+              html += `<div class="info-box">
+                <div class="info-title">💡 サポート</div>
+                <div class="info-content">${nl2br(e(info.support))}</div>
+              </div>`;
+            }
+            
+            if (info.wisdom) {
+              html += `<div class="quote-box">
+                <p class="quote-text">${e(info.wisdom)}</p>
+              </div>`;
+            }
+            
+            html += `</div>`;
+          }
+          
+          html += `</div></section>`;
+        }
+
+        // 実用的応用
+        if (data.practicalApplications) {
+          html += `<section class="section">
+            <h2 class="section-title">実用的な応用方法</h2>`;
+          
+          if (data.practicalApplications.career) {
+            const career = data.practicalApplications.career;
+            html += `<div class="prose"><h3>キャリア</h3>`;
+            
+            if (career.ideal && Array.isArray(career.ideal)) {
+              html += `<h4>適した職業</h4><ul>`;
+              career.ideal.forEach(job => html += `<li>${e(job)}</li>`);
+              html += `</ul>`;
+            }
+            
+            if (career.challenges && Array.isArray(career.challenges)) {
+              html += `<h4>キャリア上の課題</h4><ul>`;
+              career.challenges.forEach(ch => html += `<li>${e(ch)}</li>`);
+              html += `</ul>`;
+            }
+            
+            if (career.strategies && Array.isArray(career.strategies)) {
+              html += `<h4>戦略</h4><ul>`;
+              career.strategies.forEach(st => html += `<li>${e(st)}</li>`);
+              html += `</ul>`;
+            }
+            
+            html += `</div>`;
+          }
+          
+          if (data.practicalApplications.problemSolving) {
+            const ps = data.practicalApplications.problemSolving;
+            html += `<div class="prose"><h3>問題解決</h3>`;
+            
+            if (ps.approach) {
+              html += `<p>${e(ps.approach)}</p>`;
+            }
+            
+            if (ps.process && Array.isArray(ps.process)) {
+              html += `<h4>プロセス</h4><ol>`;
+              ps.process.forEach(step => html += `<li>${e(step)}</li>`);
+              html += `</ol>`;
+            }
+            
+            html += `</div>`;
+          }
+          
+          html += `</section>`;
+        }
+
+        // トレーニングプログラム
+        if (data.trainingProgram) {
+          html += `<section class="section">
+            <h2 class="section-title">トレーニングプログラム</h2>`;
+          
+          ['beginner', 'intermediate', 'advanced'].forEach(level => {
+            if (data.trainingProgram[level]) {
+              const prog = data.trainingProgram[level];
+              const levelName = {
+                beginner: '初級',
+                intermediate: '中級',
+                advanced: '上級'
+              }[level];
+              
+              html += `<div class="info-box">
+                <div class="info-title">${levelName}：${e(prog.goal || '')}</div>
+                <div class="info-content">`;
+              
+              if (prog.duration) {
+                html += `<p><strong>期間：</strong>${e(prog.duration)}</p>`;
+              }
+              
+              if (prog.exercises && Array.isArray(prog.exercises)) {
+                html += `<h4>エクササイズ</h4>`;
+                prog.exercises.forEach(ex => {
+                  html += `<div style="margin-bottom: 1rem;">
+                    <p><strong>${e(ex.name)}</strong></p>
+                    <p>${e(ex.description)}</p>
+                    ${ex.frequency ? `<p><em>頻度：${e(ex.frequency)}</em></p>` : ''}
+                  </div>`;
+                });
+              }
+              
+              html += `</div></div>`;
+            }
+          });
+          
+          html += `</section>`;
+        }
+
+        // 有名人
+        if (data.famousPeople && Array.isArray(data.famousPeople)) {
+          html += `<section class="section">
+            <h2 class="section-title">この機能を持つ有名人</h2>
+            <div class="famous-grid">`;
+          
+          data.famousPeople.forEach(person => {
+            html += `<div class="famous-card">
+              <div class="famous-header">
+                <div class="famous-name">${e(person.name)}</div>
+                ${person.type ? `<div class="famous-type">${e(person.type)}</div>` : ''}
+              </div>
+              ${person.reason ? `<p class="famous-reason">${e(person.reason)}</p>` : ''}
+              ${person.quote ? `<div class="famous-quote">"${e(person.quote)}"</div>` : ''}
+            </div>`;
+          });
+          
+          html += `</div></section>`;
+        }
+
+        // Jung の引用
+        if (data.history) {
+          html += `<section class="section">
+            <h2 class="section-title">Jung の視点</h2>`;
+          
+          if (data.history.jungQuote) {
+            html += `<div class="quote-box">
+              <p class="quote-text">${e(data.history.jungQuote)}</p>
+              ${data.history.jungSource ? `<p class="quote-author">${e(data.history.jungSource)}</p>` : ''}
+            </div>`;
+          }
+          
+          if (data.history.context) {
+            html += `<div class="prose"><p>${nl2br(e(data.history.context))}</p></div>`;
+          }
+          
+          if (data.history.warning) {
+            html += `<div class="warning-box">
+              <div class="warning-title">⚠ Jung の警告</div>
+              <div class="warning-content">${nl2br(e(data.history.warning))}</div>
+            </div>`;
+          }
+          
+          if (data.history.historicalFigures && Array.isArray(data.history.historicalFigures)) {
+            html += `<div class="prose"><h3>歴史上の人物</h3></div>`;
+            data.history.historicalFigures.forEach(fig => {
+              html += `<div class="info-box">
+                <div class="info-title">${e(fig.name)} ${fig.period ? `（${e(fig.period)}）` : ''}</div>
+                <div class="info-content">
+                  ${fig.contribution ? `<p>${e(fig.contribution)}</p>` : ''}
+                  ${fig.quote ? `<p><em>"${e(fig.quote)}"</em></p>` : ''}
+                </div>
+              </div>`;
+            });
+          }
+          
+          html += `</section>`;
+        }
+
+        // 文化的文脈
+        if (data.culturalContext) {
+          html += `<section class="section">
+            <h2 class="section-title">文化的文脈</h2>
+            <div class="prose">`;
+          
+          if (data.culturalContext.western) {
+            html += `<h3>西洋における評価</h3><p>${nl2br(e(data.culturalContext.western))}</p>`;
+          }
+          
+          if (data.culturalContext.japanese) {
+            html += `<h3>日本における評価</h3><p>${nl2br(e(data.culturalContext.japanese))}</p>`;
+          }
+          
+          if (data.culturalContext.balance) {
+            html += `<h3>バランスの取り方</h3><p>${nl2br(e(data.culturalContext.balance))}</p>`;
+          }
+          
+          html += `</div></section>`;
+        }
+
+        // よくある誤解
+        if (data.misconceptions && Array.isArray(data.misconceptions)) {
+          html += `<section class="section">
+            <h2 class="section-title">よくある誤解</h2>`;
+          
+          data.misconceptions.forEach((misc, i) => {
+            html += `<div class="comparison-card">
+              <div class="comparison-header">誤解 ${i + 1}：${e(misc.myth)}</div>
+              <div class="prose">
+                <h4>真実</h4>
+                <p>${nl2br(e(misc.truth))}</p>
+                ${misc.evidence ? `<p><em>根拠：${e(misc.evidence)}</em></p>` : ''}
+                ${misc.clarification ? `<p>${e(misc.clarification)}</p>` : ''}
+              </div>
+            </div>`;
+          });
+          
+          html += `</section>`;
+        }
+
+        // 科学的限界
+        if (data.cognitiveScience && data.cognitiveScience.limitations) {
+          html += `<section class="section">
+            <h2 class="section-title">科学的限界</h2>
+            <div class="warning-box">
+              <div class="warning-title">⚠ 正直な開示</div>
+              <div class="warning-content">${nl2br(e(data.cognitiveScience.limitations.scientificCaveats || ''))}</div>
+            </div>`;
+          
+          if (data.cognitiveScience.limitations.howToCompensate) {
+            const comp = data.cognitiveScience.limitations.howToCompensate;
+            html += `<div class="info-box">
+              <div class="info-title">💡 ${e(comp.title || '限界を補う方法')}</div>
+              <div class="info-content">`;
+            
+            if (comp.strategies && Array.isArray(comp.strategies)) {
+              comp.strategies.forEach(strat => {
+                html += `<div style="margin-bottom: 1rem;">
+                  <p><strong>${e(strat.limitation)}</strong></p>
+                  <p>補完機能：<strong>${e(strat.compensatingFunction)}</strong></p>
+                  <p>${e(strat.integration)}</p>
+                </div>`;
+              });
+            }
+            
+            if (comp.balancedApproach) {
+              html += `<p><strong>バランスの取れたアプローチ：</strong>${e(comp.balancedApproach)}</p>`;
+            }
+            
+            html += `</div></div>`;
+          }
+          
+          html += `</section>`;
+        }
+
+        // 関連概念
+        if (data.relatedConcepts && Array.isArray(data.relatedConcepts)) {
+          html += `<section class="section">
+            <h2 class="section-title">関連概念</h2>`;
+          
+          data.relatedConcepts.forEach(concept => {
+            html += `<div class="info-box">
+              <div class="info-title">${e(concept.term)}</div>
+              <div class="info-content">
+                <p>${e(concept.relation)}</p>
+                ${concept.reference ? `<p><em>参考：${e(concept.reference)}</em></p>` : ''}
+              </div>
+            </div>`;
+          });
+          
+          html += `</section>`;
+        }
+
+        // HTMLを挿入
+        document.getElementById('main-content').innerHTML = html;
+
+        // アニメーション
+        observeSections();
+
+      } catch (e) {
+        document.getElementById('main-content').innerHTML = 
+          `<div class="warning-box">
+            <div class="warning-title">⚠ エラー</div>
+            <div class="warning-content">${e.message}</div>
+          </div>`;
+      }
+    }
+
+    function e(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function nl2br(str) {
+      return str.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    }
+
+    function observeSections() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+      document.querySelectorAll('.section').forEach(section => {
+        observer.observe(section);
+      });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
